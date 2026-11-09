@@ -1,0 +1,328 @@
+{
+  "lot-a-le.stdf": {
+    "record_count": 27,
+    "records": {
+      "0/10": 1,
+      "1/10": 1,
+      "1/80": 1,
+      "2/10": 1,
+      "2/30": 1,
+      "1/60": 3,
+      "15/10": 3,
+      "5/10": 2,
+      "15/15": 1,
+      "15/20": 1,
+      "5/20": 2,
+      "1/30": 1,
+      "1/40": 2,
+      "1/50": 2,
+      "10/30": 3,
+      "2/20": 1,
+      "1/20": 1
+    },
+    "parts": [
+      {
+        "head": 1,
+        "site": 2,
+        "x": 1,
+        "y": 0,
+        "outcome": "fail",
+        "hard_bin": 2,
+        "soft_bin": 20,
+        "test_count": 2
+      },
+      {
+        "head": 1,
+        "site": 1,
+        "x": 0,
+        "y": 0,
+        "outcome": "pass",
+        "hard_bin": 1,
+        "soft_bin": 10,
+        "test_count": 2
+      }
+    ],
+    "yield": {
+      "total": 2,
+      "passed": 1,
+      "failed": 1,
+      "unknown": 0,
+      "abnormal": 0,
+      "denominator": 2,
+      "yield": 0.5
+    },
+    "ptr_100_values_in_file_order": [
+      4.0,
+      1.0
+    ],
+    "mpr_200_states": [
+      1,
+      2,
+      3
+    ],
+    "mpr_200_values": [
+      2.0,
+      2.5
+    ],
+    "sha256": "e0d7afcadff57ddedc8578ef8817c88f20522738ca3d0ae4ed739466e50a35b1",
+    "size_bytes": 664,
+    "ptr_100_mean": 2.5,
+    "mpr_200_mean": 2.25
+  },
+  "lot-a-be.stdf": {
+    "record_count": 27,
+    "records": {
+      "0/10": 1,
+      "1/10": 1,
+      "1/80": 1,
+      "2/10": 1,
+      "2/30": 1,
+      "1/60": 3,
+      "15/10": 3,
+      "5/10": 2,
+      "15/15": 1,
+      "15/20": 1,
+      "5/20": 2,
+      "1/30": 1,
+      "1/40": 2,
+      "1/50": 2,
+      "10/30": 3,
+      "2/20": 1,
+      "1/20": 1
+    },
+    "parts": [
+      {
+        "head": 1,
+        "site": 2,
+        "x": 1,
+        "y": 0,
+        "outcome": "fail",
+        "hard_bin": 2,
+        "soft_bin": 20,
+        "test_count": 2
+      },
+      {
+        "head": 1,
+        "site": 1,
+        "x": 0,
+        "y": 0,
+        "outcome": "pass",
+        "hard_bin": 1,
+        "soft_bin": 10,
+        "test_count": 2
+      }
+    ],
+    "yield": {
+      "total": 2,
+      "passed": 1,
+      "failed": 1,
+      "unknown": 0,
+      "abnormal": 0,
+      "denominator": 2,
+      "yield": 0.5
+    },
+    "ptr_100_values_in_file_order": [
+      4.0,
+      1.0
+    ],
+    "mpr_200_states": [
+      1,
+      2,
+      3
+    ],
+    "mpr_200_values": [
+      2.0,
+      2.5
+    ],
+    "sha256": "fafe482ceb06000c4ad703a9e365f0f2831bffd72fdd25a0fa27fc2f5977e0d4",
+    "size_bytes": 664,
+    "ptr_100_mean": 2.5,
+    "mpr_200_mean": 2.25
+  },
+  "lot-b-le.stdf": {
+    "record_count": 27,
+    "records": {
+      "0/10": 1,
+      "1/10": 1,
+      "1/80": 1,
+      "2/10": 1,
+      "2/30": 1,
+      "1/60": 3,
+      "15/10": 3,
+      "5/10": 2,
+      "15/15": 1,
+      "15/20": 1,
+      "5/20": 2,
+      "1/30": 1,
+      "1/40": 2,
+      "1/50": 2,
+      "10/30": 3,
+      "2/20": 1,
+      "1/20": 1
+    },
+    "parts": [
+      {
+        "head": 1,
+        "site": 2,
+        "x": 1,
+        "y": 0,
+        "outcome": "fail",
+        "hard_bin": 2,
+        "soft_bin": 20,
+        "test_count": 2
+      },
+      {
+        "head": 1,
+        "site": 1,
+        "x": 0,
+        "y": 0,
+        "outcome": "pass",
+        "hard_bin": 1,
+        "soft_bin": 10,
+        "test_count": 2
+      }
+    ],
+    "yield": {
+      "total": 2,
+      "passed": 1,
+      "failed": 1,
+      "unknown": 0,
+      "abnormal": 0,
+      "denominator": 2,
+      "yield": 0.5
+    },
+    "ptr_100_values_in_file_order": [
+      5.0,
+      2.0
+    ],
+    "mpr_200_states": [
+      1,
+      2,
+      3
+    ],
+    "mpr_200_values": [
+      2.0,
+      2.5
+    ],
+    "sha256": "3970310713da7c0653739bc9b8d5d129432f396c46ea41e6c06e561cac6832b5",
+    "size_bytes": 664,
+    "ptr_100_mean": 3.5,
+    "mpr_200_mean": 2.25
+  },
+  "retest-le.stdf": {
+    "record_count": 25,
+    "records": {
+      "0/10": 1,
+      "1/10": 1,
+      "1/80": 1,
+      "2/10": 1,
+      "2/30": 1,
+      "1/60": 3,
+      "15/10": 3,
+      "5/10": 2,
+      "15/15": 1,
+      "15/20": 1,
+      "5/20": 2,
+      "1/30": 1,
+      "1/40": 1,
+      "1/50": 1,
+      "10/30": 3,
+      "2/20": 1,
+      "1/20": 1
+    },
+    "parts": [
+      {
+        "head": 1,
+        "site": 2,
+        "x": 1,
+        "y": 0,
+        "outcome": "pass",
+        "hard_bin": 1,
+        "soft_bin": 10,
+        "test_count": 2
+      },
+      {
+        "head": 1,
+        "site": 1,
+        "x": 0,
+        "y": 0,
+        "outcome": "pass",
+        "hard_bin": 1,
+        "soft_bin": 10,
+        "test_count": 2
+      }
+    ],
+    "yield": {
+      "total": 2,
+      "passed": 2,
+      "failed": 0,
+      "unknown": 0,
+      "abnormal": 0,
+      "denominator": 2,
+      "yield": 1.0
+    },
+    "ptr_100_values_in_file_order": [
+      2.0,
+      1.0
+    ],
+    "mpr_200_states": [
+      1,
+      2,
+      3
+    ],
+    "mpr_200_values": [
+      2.0,
+      2.5
+    ],
+    "sha256": "a43545babe97a7c8e6d7b670a56b221c9273e4e81795e06699fb9c594233892f",
+    "size_bytes": 628,
+    "ptr_100_mean": 1.5,
+    "mpr_200_mean": 2.25
+  },
+  "optional-boundaries-le.stdf": {
+    "record_count": 13,
+    "records": {
+      "0/10": 1,
+      "1/10": 1,
+      "1/80": 1,
+      "2/10": 1,
+      "2/30": 1,
+      "5/10": 1,
+      "15/10": 1,
+      "15/15": 2,
+      "5/20": 1,
+      "1/30": 1,
+      "2/20": 1,
+      "1/20": 1
+    },
+    "parts": [
+      {
+        "head": 1,
+        "site": 1,
+        "x": 0,
+        "y": 0,
+        "outcome": "pass",
+        "hard_bin": 1,
+        "soft_bin": 10,
+        "test_count": 3
+      }
+    ],
+    "yield": {
+      "total": 1,
+      "passed": 1,
+      "failed": 0,
+      "unknown": 0,
+      "abnormal": 0,
+      "denominator": 1,
+      "yield": 1.0
+    },
+    "ptr_100_values_in_file_order": [],
+    "mpr_200_states": [],
+    "mpr_200_values": [],
+    "sha256": "77715993ec8f487d019df73ed8802c8585b08c7d37f770fc51108a4edae4c386",
+    "size_bytes": 270
+  },
+  "malformed-truncated.stdf": {
+    "expected_error": "truncated final MRR body"
+  }
+}

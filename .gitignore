@@ -6,3 +6,5 @@
 !fixtures/*.stdf
 /reports/
 /申报书.md
+/web/moonstdf.js
+__pycache__/
