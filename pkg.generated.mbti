@@ -1,0 +1,72 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "0607272/moonstdf"
+
+import {
+  "moonbitlang/core/debug",
+}
+
+// Values
+pub fn decode_frames(Bytes) -> Array[Frame] raise StdfError
+
+// Errors
+#derive(@debug.Debug)
+pub suberror StdfError {
+  StdfError(Int32, String)
+}
+pub fn StdfError::to_repr(Self) -> @debug.Repr
+
+// Types and methods
+#derive(Eq, @debug.Debug)
+pub(all) enum ByteOrder {
+  Little
+  Big
+}
+pub fn ByteOrder::equal(Self, Self) -> Bool
+pub fn ByteOrder::not_equal(Self, Self) -> Bool
+pub fn ByteOrder::to_repr(Self) -> @debug.Repr
+
+#derive(Eq, @debug.Debug)
+pub(all) struct Frame {
+  offset : Int32
+  typ : Int32
+  sub : Int32
+  order : ByteOrder
+  body : Bytes
+}
+pub fn Frame::equal(Self, Self) -> Bool
+pub fn Frame::not_equal(Self, Self) -> Bool
+pub fn Frame::to_repr(Self) -> @debug.Repr
+
+pub struct Framer {
+  mut pending : Bytes
+  mut offset : Int32
+  mut received : Int32
+  mut count : Int32
+  mut order : ByteOrder?
+  mut closed : Bool
+  max_bytes : Int32
+  max_records : Int32
+}
+pub fn Framer::feed(Self, Bytes) -> Array[Frame] raise StdfError
+pub fn Framer::finish(Self) -> Unit raise StdfError
+pub fn Framer::new(max_bytes? : Int32, max_records? : Int32) -> Self
+
+pub struct Reader {
+  data : Bytes
+  order : ByteOrder
+  base : Int32
+  mut pos : Int32
+}
+pub fn Reader::cn(Self) -> String raise StdfError
+pub fn Reader::i1(Self) -> Int32 raise StdfError
+pub fn Reader::i2(Self) -> Int32 raise StdfError
+pub fn Reader::new(Bytes, ByteOrder, Int32) -> Self
+pub fn Reader::r4(Self) -> Double raise StdfError
+pub fn Reader::take(Self, Int32) -> Bytes raise StdfError
+pub fn Reader::u1(Self) -> Int32 raise StdfError
+pub fn Reader::u2(Self) -> Int32 raise StdfError
+pub fn Reader::u4(Self) -> UInt32 raise StdfError
+
+// Type aliases
+
+// Traits
