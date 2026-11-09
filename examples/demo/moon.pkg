@@ -1,0 +1,5 @@
+import {
+  "0607272/moonstdf",
+}
+
+pkgtype(kind: "executable")

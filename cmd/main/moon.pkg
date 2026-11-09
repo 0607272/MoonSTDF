@@ -1,0 +1,7 @@
+import {
+  "0607272/moonstdf",
+}
+
+pkgtype(kind: "executable")
+
+supported_targets = "-all+js"
