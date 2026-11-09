@@ -8,6 +8,10 @@ import {
 // Values
 pub fn analyze(Bytes) -> Analysis raise StdfError
 
+pub fn compare_batches(Array[Part], Array[Part]) -> BatchComparison
+
+pub fn compare_retests(Array[Part], Array[Part], RetestIdentity) -> RetestReport
+
 pub fn decode_frames(Bytes) -> Array[Frame] raise StdfError
 
 pub fn decode_functional(Frame) -> TestRecord? raise StdfError
@@ -19,6 +23,24 @@ pub fn decode_parametric(Frame) -> TestRecord? raise StdfError
 pub fn decode_part(Frame) -> PartRecord? raise StdfError
 
 pub fn decode_summary(Frame) -> Summary? raise StdfError
+
+pub fn grouped_yield(Array[Part]) -> Array[YieldGroup]
+
+pub fn parts_csv(Array[Part]) -> String
+
+pub fn report_html(Analysis) -> String
+
+pub fn report_json(Analysis) -> String
+
+pub fn select_retests(Array[Part], RetestPolicy, RetestIdentity) -> RetestSelection
+
+pub fn summary_diagnostics(Analysis) -> Array[Diagnostic]
+
+pub fn test_signature(Measurement) -> TestSignature
+
+pub fn test_statistics(Array[Part]) -> Array[TestStatistics]
+
+pub fn yield_summary(Array[Part]) -> YieldSummary
 
 // Errors
 #derive(@debug.Debug)
@@ -56,6 +78,23 @@ pub struct Analyzer {
 pub fn Analyzer::accept(Self, Frame) -> Unit raise StdfError
 pub fn Analyzer::finish(Self) -> Analysis raise StdfError
 pub fn Analyzer::new() -> Self
+
+#derive(@debug.Debug)
+pub(all) struct BatchComparison {
+  before_yield : YieldSummary
+  after_yield : YieldSummary
+  tests : Array[TestComparison]
+  diagnostics : Array[Diagnostic]
+}
+pub fn BatchComparison::to_repr(Self) -> @debug.Repr
+
+#derive(@debug.Debug)
+pub(all) struct BinTransition {
+  before_bin : Int32
+  after_bin : Int32
+  count : Int32
+}
+pub fn BinTransition::to_repr(Self) -> @debug.Repr
 
 #derive(Eq, @debug.Debug)
 pub(all) enum ByteOrder {
@@ -218,6 +257,47 @@ pub fn Reader::u2(Self) -> Int32 raise StdfError
 pub fn Reader::u4(Self) -> UInt32 raise StdfError
 
 #derive(Eq, @debug.Debug)
+pub(all) enum RetestIdentity {
+  WaferCoordinates
+  PartId
+}
+pub fn RetestIdentity::equal(Self, Self) -> Bool
+pub fn RetestIdentity::not_equal(Self, Self) -> Bool
+pub fn RetestIdentity::to_repr(Self) -> @debug.Repr
+
+#derive(Eq, @debug.Debug)
+pub(all) enum RetestPolicy {
+  First
+  Last
+}
+pub fn RetestPolicy::equal(Self, Self) -> Bool
+pub fn RetestPolicy::not_equal(Self, Self) -> Bool
+pub fn RetestPolicy::to_repr(Self) -> @debug.Repr
+
+#derive(@debug.Debug)
+pub(all) struct RetestReport {
+  matched : Int32
+  recovered : Int32
+  still_failed : Int32
+  regressed : Int32
+  unknown : Int32
+  ambiguous : Int32
+  unmatched_before : Int32
+  unmatched_after : Int32
+  transitions : Array[BinTransition]
+  diagnostics : Array[Diagnostic]
+}
+pub fn RetestReport::to_repr(Self) -> @debug.Repr
+
+#derive(@debug.Debug)
+pub(all) struct RetestSelection {
+  parts : Array[Part]
+  diagnostics : Array[Diagnostic]
+  duplicates : Int32
+}
+pub fn RetestSelection::to_repr(Self) -> @debug.Repr
+
+#derive(Eq, @debug.Debug)
 pub(all) struct Summary {
   kind : String
   head : Int32
@@ -231,6 +311,16 @@ pub(all) struct Summary {
 pub fn Summary::equal(Self, Self) -> Bool
 pub fn Summary::not_equal(Self, Self) -> Bool
 pub fn Summary::to_repr(Self) -> @debug.Repr
+
+#derive(@debug.Debug)
+pub(all) struct TestComparison {
+  signature : TestSignature
+  before : TestStatistics
+  after : TestStatistics
+  mean_delta : Double?
+  failure_rate_delta : Double?
+}
+pub fn TestComparison::to_repr(Self) -> @debug.Repr
 
 #derive(@debug.Debug)
 pub(all) struct TestDefaults {
@@ -260,6 +350,42 @@ pub(all) struct TestRecord {
 }
 pub fn TestRecord::to_repr(Self) -> @debug.Repr
 
+#derive(Eq, Hash, @debug.Debug)
+pub(all) struct TestSignature {
+  kind : String
+  number : UInt32
+  units : String?
+  low : Double?
+  high : Double?
+  low_equal : Bool
+  high_equal : Bool
+}
+pub fn TestSignature::equal(Self, Self) -> Bool
+pub fn TestSignature::hash(Self) -> Int32
+pub fn TestSignature::hash_combine(Self, Hasher) -> Unit
+pub fn TestSignature::not_equal(Self, Self) -> Bool
+pub fn TestSignature::to_repr(Self) -> @debug.Repr
+
+#derive(@debug.Debug)
+pub(all) struct TestStatistics {
+  signature : TestSignature
+  text : String
+  executions : Int32
+  passed : Int32
+  failed : Int32
+  unknown : Int32
+  usable_samples : Int32
+  excluded_samples : Int32
+  mean : Double?
+  stddev : Double?
+  minimum : Double?
+  maximum : Double?
+  below_limit : Int32
+  above_limit : Int32
+  failure_rate : Double?
+}
+pub fn TestStatistics::to_repr(Self) -> @debug.Repr
+
 #derive(@debug.Debug)
 pub(all) struct WaferGeometry {
   diameter : Double?
@@ -273,6 +399,26 @@ pub(all) struct WaferGeometry {
   positive_y : Int32
 }
 pub fn WaferGeometry::to_repr(Self) -> @debug.Repr
+
+#derive(@debug.Debug)
+pub(all) struct YieldGroup {
+  dimension : String
+  key : String
+  summary : YieldSummary
+}
+pub fn YieldGroup::to_repr(Self) -> @debug.Repr
+
+#derive(@debug.Debug)
+pub(all) struct YieldSummary {
+  total : Int32
+  passed : Int32
+  failed : Int32
+  unknown : Int32
+  abnormal : Int32
+  denominator : Int32
+  yield_rate : Double?
+}
+pub fn YieldSummary::to_repr(Self) -> @debug.Repr
 
 // Type aliases
 
