@@ -6,13 +6,19 @@ import {
 }
 
 // Values
+pub fn analyze(Bytes) -> Analysis raise StdfError
+
 pub fn decode_frames(Bytes) -> Array[Frame] raise StdfError
+
+pub fn decode_functional(Frame) -> TestRecord? raise StdfError
 
 pub fn decode_metadata(Frame) -> Metadata? raise StdfError
 
 pub fn decode_parametric(Frame) -> TestRecord? raise StdfError
 
 pub fn decode_part(Frame) -> PartRecord? raise StdfError
+
+pub fn decode_summary(Frame) -> Summary? raise StdfError
 
 // Errors
 #derive(@debug.Debug)
@@ -22,6 +28,35 @@ pub suberror StdfError {
 pub fn StdfError::to_repr(Self) -> @debug.Repr
 
 // Types and methods
+#derive(@debug.Debug)
+pub(all) struct Analysis {
+  parts : Array[Part]
+  diagnostics : Array[Diagnostic]
+  summaries : Array[Summary]
+  unknown : Array[Frame]
+  record_count : Int32
+}
+pub fn Analysis::to_repr(Self) -> @debug.Repr
+
+pub struct Analyzer {
+  mut lot : String
+  mut have_mir : Bool
+  mut have_mrr : Bool
+  mut count : Int32
+  mut closed : Bool
+  parts : Array[Part]
+  diagnostics : Array[Diagnostic]
+  summaries : Array[Summary]
+  unknown : Array[Frame]
+  groups : Map[String, Int32]
+  wafers : Map[String, String]
+  pending : Map[String, PendingPart]
+  defaults : Map[String, TestDefaults]
+}
+pub fn Analyzer::accept(Self, Frame) -> Unit raise StdfError
+pub fn Analyzer::finish(Self) -> Analysis raise StdfError
+pub fn Analyzer::new() -> Self
+
 #derive(Eq, @debug.Debug)
 pub(all) enum ByteOrder {
   Little
@@ -30,6 +65,14 @@ pub(all) enum ByteOrder {
 pub fn ByteOrder::equal(Self, Self) -> Bool
 pub fn ByteOrder::not_equal(Self, Self) -> Bool
 pub fn ByteOrder::to_repr(Self) -> @debug.Repr
+
+#derive(@debug.Debug)
+pub(all) struct Diagnostic {
+  offset : Int32
+  code : String
+  message : String
+}
+pub fn Diagnostic::to_repr(Self) -> @debug.Repr
 
 #derive(Eq, @debug.Debug)
 pub(all) struct Frame {
@@ -71,6 +114,23 @@ pub(all) struct LotInfo {
 pub fn LotInfo::to_repr(Self) -> @debug.Repr
 
 #derive(@debug.Debug)
+pub(all) struct Measurement {
+  kind : String
+  number : UInt32
+  text : String
+  values : Array[Double]
+  units : String?
+  low : Double?
+  high : Double?
+  low_equal : Bool
+  high_equal : Bool
+  flags : Int32
+  param_flags : Int32
+  offset : Int32
+}
+pub fn Measurement::to_repr(Self) -> @debug.Repr
+
+#derive(@debug.Debug)
 pub(all) enum Metadata {
   Far(Int32, Int32)
   Mir(LotInfo)
@@ -91,6 +151,16 @@ pub(all) enum Outcome {
 pub fn Outcome::equal(Self, Self) -> Bool
 pub fn Outcome::not_equal(Self, Self) -> Bool
 pub fn Outcome::to_repr(Self) -> @debug.Repr
+
+#derive(@debug.Debug)
+pub(all) struct Part {
+  lot : String
+  wafer : String?
+  result : PartResult
+  tests : Array[Measurement]
+  offset : Int32
+}
+pub fn Part::to_repr(Self) -> @debug.Repr
 
 #derive(Eq, @debug.Debug)
 pub(all) enum PartRecord {
@@ -121,6 +191,13 @@ pub fn PartResult::equal(Self, Self) -> Bool
 pub fn PartResult::not_equal(Self, Self) -> Bool
 pub fn PartResult::to_repr(Self) -> @debug.Repr
 
+pub struct PendingPart {
+  lot : String
+  wafer : String?
+  tests : Array[Measurement]
+  offset : Int32
+}
+
 pub struct Reader {
   data : Bytes
   order : ByteOrder
@@ -139,6 +216,21 @@ pub fn Reader::take(Self, Int32) -> Bytes raise StdfError
 pub fn Reader::u1(Self) -> Int32 raise StdfError
 pub fn Reader::u2(Self) -> Int32 raise StdfError
 pub fn Reader::u4(Self) -> UInt32 raise StdfError
+
+#derive(Eq, @debug.Debug)
+pub(all) struct Summary {
+  kind : String
+  head : Int32
+  site : Int32
+  number : UInt32?
+  count : UInt32?
+  good : UInt32?
+  fails : UInt32?
+  label : String
+}
+pub fn Summary::equal(Self, Self) -> Bool
+pub fn Summary::not_equal(Self, Self) -> Bool
+pub fn Summary::to_repr(Self) -> @debug.Repr
 
 #derive(@debug.Debug)
 pub(all) struct TestDefaults {
