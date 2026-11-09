@@ -27,7 +27,8 @@ pub(all) struct Frame {
 ///|
 /// Stateful, single-use bounded incremental decoder. Errors poison the decoder.
 pub struct Framer {
-  mut pending : Bytes
+  pending : Array[Byte]
+  mut target : Int32
   mut offset : Int32
   mut received : Int32
   mut count : Int32
@@ -43,7 +44,8 @@ pub fn Framer::new(
   max_records~ : Int32 = 1000000,
 ) -> Framer {
   {
-    pending: b"",
+    pending: [],
+    target: 6,
     offset: 0,
     received: 0,
     count: 0,
@@ -65,57 +67,78 @@ pub fn Framer::feed(
   errdefer {
     self.closed = true
   }
+  if self.max_bytes < 0 || self.max_records < 0 {
+    raise StdfError(self.offset, "negative decoder budget")
+  }
   if chunk.length() > self.max_bytes - self.received {
     raise StdfError(self.offset, "input byte budget exceeded")
   }
   self.received += chunk.length()
-  let data = self.pending + chunk
-  let mut p = 0
   let out : Array[Frame] = []
-  if self.order is None && data.length() >= 6 {
-    if data[2] != 0 || data[3] != 10 || data[5] != 4 {
-      raise StdfError(0, "expected STDF V4 FAR")
+  // Append each input byte once. The growable current-record buffer avoids
+  // recopying an ever-growing partial payload for every fragmented feed.
+  for byte in chunk {
+    if self.pending.length() == 0 && self.count >= self.max_records {
+      raise StdfError(self.offset, "record budget exceeded")
     }
-    let order = match data[4].to_int() {
-      1 => Big
-      2 => Little
-      _ =>
-        raise StdfError(4, "unsupported CPU_TYPE (only IEEE big/little endian)")
+    self.pending.push(byte)
+    if self.pending.length() != self.target {
+      continue
     }
-    let r = Reader::new(data, order, 0)
-    if r.u2() != 2 {
-      raise StdfError(0, "FAR length must be two")
+    let data = self.pending
+    if self.order is None {
+      if data[2] != 0 || data[3] != 10 || data[5] != 4 {
+        raise StdfError(0, "expected STDF V4 FAR")
+      }
+      let order = match data[4].to_int() {
+        1 => Big
+        2 => Little
+        _ =>
+          raise StdfError(
+            4, "unsupported CPU_TYPE (only IEEE big/little endian)",
+          )
+      }
+      let length = if order == Little {
+        data[0].to_int() | (data[1].to_int() << 8)
+      } else {
+        (data[0].to_int() << 8) | data[1].to_int()
+      }
+      if length != 2 {
+        raise StdfError(0, "FAR length must be two")
+      }
+      self.order = Some(order)
     }
-    self.order = Some(order)
+    let order = self.order.unwrap()
+    if data.length() == 4 {
+      let length = if order == Little {
+        data[0].to_int() | (data[1].to_int() << 8)
+      } else {
+        (data[0].to_int() << 8) | data[1].to_int()
+      }
+      self.target = length + 4
+      if self.target != 4 {
+        continue
+      }
+    }
+    let typ = data[2].to_int()
+    let sub = data[3].to_int()
+    if self.count > 0 && typ == 0 && sub == 10 {
+      raise StdfError(self.offset, "unexpected second FAR")
+    }
+    // Materialize only a complete body; clearing the mutable buffer cannot
+    // change any already emitted immutable Bytes.
+    out.push({
+      offset: self.offset,
+      typ,
+      sub,
+      order,
+      body: Bytes::from_array(data[4:]),
+    })
+    self.offset += self.target
+    self.count += 1
+    self.pending.clear()
+    self.target = 4
   }
-  if self.order is Some(order) {
-    while data.length() - p >= 4 {
-      let r = Reader::new(data[p:p + 2].to_owned(), order, self.offset + p)
-      let length = r.u2()
-      if data.length() - p - 4 < length {
-        break
-      }
-      if self.count >= self.max_records {
-        raise StdfError(self.offset + p, "record budget exceeded")
-      }
-      let typ = data[p + 2].to_int()
-      let sub = data[p + 3].to_int()
-      if self.count > 0 && typ == 0 && sub == 10 {
-        raise StdfError(self.offset + p, "unexpected second FAR")
-      }
-      out.push({
-        offset: self.offset + p,
-        typ,
-        sub,
-        order,
-        body: data[p + 4:p + 4 + length].to_owned(),
-      })
-      p += length + 4
-      self.count += 1
-    }
-  }
-  self.pending = data[p:].to_owned()
-  self.offset += p
   out
 }
 

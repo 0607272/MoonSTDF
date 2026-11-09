@@ -22,6 +22,131 @@ test "incremental framing is independent of every chunk boundary" {
 }
 
 ///|
+test "maximal record body survives one byte chunks and empty feeds" {
+  let body = Bytes::from_array(Array::make(65535, b'Z'))
+  let stream = b"\x02\x00\x00\x0a\x02\x04\xff\xff\xc8\x01" +
+    body +
+    b"\x00\x00\xc9\x02"
+  let f = Framer::new(max_bytes=65549, max_records=3)
+  let frames : Array[Frame] = []
+  for byte in stream {
+    assert_eq(f.feed(b"").length(), 0)
+    for record in f.feed(Bytes::from_array([byte])) {
+      frames.push(record)
+    }
+  }
+  f.finish()
+  assert_eq(frames.length(), 3)
+  assert_eq(frames[1].offset, 6)
+  assert_eq(frames[1].typ, 200)
+  assert_eq(frames[1].body, body)
+  assert_eq(frames[2].offset, 65545)
+  assert_eq(frames[2].body, b"")
+}
+
+///|
+test "invalid framing budgets fail even on empty feed and poison the decoder" {
+  for f in [Framer::new(max_bytes=-1), Framer::new(max_records=-1)] {
+    assert_true(
+      try {
+        ignore(f.feed(b""))
+        false
+      } catch {
+        _ => true
+      },
+    )
+    assert_true(
+      try {
+        ignore(f.feed(b"\x02\x00\x00\x0a\x02\x04"))
+        false
+      } catch {
+        _ => true
+      },
+    )
+    assert_true(
+      try {
+        f.finish()
+        false
+      } catch {
+        _ => true
+      },
+    )
+  }
+}
+
+///|
+test "exhausted record budget rejects next header before buffering and poisons" {
+  let f = Framer::new(max_records=1)
+  assert_eq(f.feed(b"\x02\x00\x00\x0a\x02\x04").length(), 1)
+  assert_eq(f.feed(b"").length(), 0)
+  assert_true(
+    try {
+      ignore(f.feed(b"\x00"))
+      false
+    } catch {
+      _ => true
+    },
+  )
+  assert_true(
+    try {
+      ignore(f.feed(b""))
+      false
+    } catch {
+      _ => true
+    },
+  )
+  assert_true(
+    try {
+      f.finish()
+      false
+    } catch {
+      _ => true
+    },
+  )
+}
+
+///|
+test "finish truncation poisons and completed decoder cannot be reused" {
+  let partial = Framer::new()
+  ignore(partial.feed(b"\x02\x00\x00\x0a\x02\x04\x03\x00\xc8\x01a"))
+  assert_true(
+    try {
+      partial.finish()
+      false
+    } catch {
+      _ => true
+    },
+  )
+  assert_true(
+    try {
+      ignore(partial.feed(b"bc"))
+      false
+    } catch {
+      _ => true
+    },
+  )
+  let done = Framer::new()
+  ignore(done.feed(b"\x02\x00\x00\x0a\x02\x04"))
+  done.finish()
+  assert_true(
+    try {
+      ignore(done.feed(b""))
+      false
+    } catch {
+      _ => true
+    },
+  )
+  assert_true(
+    try {
+      done.finish()
+      false
+    } catch {
+      _ => true
+    },
+  )
+}
+
+///|
 test "framing rejects truncation invalid FAR and resource overflow" {
   assert_true(
     try {
