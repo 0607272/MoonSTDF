@@ -58,6 +58,8 @@ priv struct StatisticsAccumulator {
   mut unknown : Int32
   mut usable : Int32
   mut excluded : Int32
+  mut scale : Double
+  // Mean and M2 are accumulated after division by the largest absolute value.
   mut mean : Double
   mut m2 : Double
   mut minimum : Double?
@@ -73,6 +75,8 @@ priv struct StatisticsAccumulator {
 /// finite value. A finite failed sample still contributes. Geometric limit
 /// counts honor equality policy and never replace reported pass/fail, including
 /// alternate-limit passes. FTR contributes status only, without numeric data.
+/// Welford accumulation is normalized by a running magnitude scale so finite
+/// opposite-sign Doubles cannot overflow the difference or squared deviation.
 pub fn test_statistics(parts : Array[Part]) -> Array[TestStatistics] {
   let indexes : Map[TestSignature, Int32] = Map([])
   let groups : Array[StatisticsAccumulator] = []
@@ -93,6 +97,7 @@ pub fn test_statistics(parts : Array[Part]) -> Array[TestStatistics] {
             unknown: 0,
             usable: 0,
             excluded: 0,
+            scale: 0.0,
             mean: 0.0,
             m2: 0.0,
             minimum: None,
@@ -122,9 +127,17 @@ pub fn test_statistics(parts : Array[Part]) -> Array[TestStatistics] {
           continue
         }
         g.usable += 1
-        let delta = value - g.mean
+        let magnitude = value.abs()
+        if magnitude > g.scale {
+          let ratio = g.scale / magnitude
+          g.mean *= ratio
+          g.m2 *= ratio * ratio
+          g.scale = magnitude
+        }
+        let normalized = if g.scale == 0.0 { 0.0 } else { value / g.scale }
+        let delta = normalized - g.mean
         g.mean += delta / g.usable.to_double()
-        g.m2 += delta * (value - g.mean)
+        g.m2 += delta * (normalized - g.mean)
         g.minimum = Some(
           match g.minimum {
             Some(old) => if value < old { value } else { old }
@@ -153,6 +166,14 @@ pub fn test_statistics(parts : Array[Part]) -> Array[TestStatistics] {
   groups.map(fn(g) {
     let known = g.passed + g.failed
     let variance = if g.usable == 0 { 0.0 } else { g.m2 / g.usable.to_double() }
+    let mean = g.mean * g.scale
+    // Only finite rounding error can be clamped; nonfinite intermediates must
+    // stay absent rather than turning an overflow into a fabricated zero SD.
+    let sd = if variance.is_finite() {
+      Some((if variance < 0.0 { 0.0 } else { variance }).sqrt() * g.scale)
+    } else {
+      None
+    }
     {
       signature: g.signature,
       text: g.text,
@@ -162,15 +183,15 @@ pub fn test_statistics(parts : Array[Part]) -> Array[TestStatistics] {
       unknown: g.unknown,
       usable_samples: g.usable,
       excluded_samples: g.excluded,
-      mean: if g.usable == 0 {
+      mean: if g.usable == 0 || !mean.is_finite() {
         None
       } else {
-        Some(g.mean)
+        Some(mean)
       },
       stddev: if g.usable == 0 {
         None
       } else {
-        Some((if variance < 0.0 { 0.0 } else { variance }).sqrt())
+        sd.filter(fn(v) { v.is_finite() })
       },
       minimum: g.minimum,
       maximum: g.maximum,

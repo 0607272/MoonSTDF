@@ -53,7 +53,7 @@ fn comparison_warn(
   diagnostics.push({
     offset: 0,
     code,
-    message: "\{side} batch \{signature.kind} test \{signature.number}: \{code}; exact units, limits, and equality policy required",
+    message: "\{side} batch: \{code}; \{@debug.to_string(signature)}",
   })
 }
 

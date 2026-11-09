@@ -215,3 +215,37 @@ test "empty samples and all unknown status retain absent metrics" {
   assert_eq(s.stddev, None)
   assert_eq(s.failure_rate, None)
 }
+
+///|
+test "finite extreme opposite samples preserve representable mean and population SD" {
+  let s = test_statistics([
+      statistics_part([
+        statistics_measurement(
+          [-1.0e308, 1.0e308],
+          kind="MPR",
+          low=None,
+          high=None,
+        ),
+      ]),
+    ])[0]
+  assert_eq(s.usable_samples, 2)
+  assert_eq(s.mean, Some(0.0))
+  assert_true(s.stddev.unwrap().is_finite())
+  assert_true((s.stddev.unwrap() / 1.0e308 - 1.0).abs() < 1.0e-15)
+}
+
+///|
+test "finite equal extreme samples keep their mean and a real zero population SD" {
+  let s = test_statistics([
+      statistics_part([
+        statistics_measurement(
+          [1.0e308, 1.0e308],
+          kind="MPR",
+          low=None,
+          high=None,
+        ),
+      ]),
+    ])[0]
+  assert_eq(s.mean, Some(1.0e308))
+  assert_eq(s.stddev, Some(0.0))
+}
