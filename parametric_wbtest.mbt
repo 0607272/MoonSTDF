@@ -178,6 +178,69 @@ test "parametric dispatch ignores other records and rejects missing mandatory da
 }
 
 ///|
+test "PTR permits an entirely omitted invalid result without inventing zero" {
+  let invalid_prefix = b"\x01\x00\x00\x00\x01\x01\x02\x00"
+  let record = decode_parametric(param_frame(invalid_prefix, 10, Little)).unwrap()
+  assert_eq(record.values.length(), 0)
+  assert_eq(record.flags, 2)
+  assert_eq(record.defaults.low, None)
+  for partial in [b"\x00", b"\x00\x00", b"\x00\x00\x00"] {
+    assert_true(
+      try {
+        ignore(
+          decode_parametric(param_frame(invalid_prefix + partial, 10, Little)),
+        )
+        false
+      } catch {
+        _ => true
+      },
+    )
+  }
+  assert_true(
+    try {
+      ignore(
+        decode_parametric(
+          param_frame(b"\x01\x00\x00\x00\x01\x01\x00\x00", 10, Little),
+        ),
+      )
+      false
+    } catch {
+      _ => true
+    },
+  )
+  let present = decode_parametric(
+    param_frame(invalid_prefix + b"\x00\x00\x80\x3f\x01T", 10, Little),
+  ).unwrap()
+  assert_eq(present.values[0], 1.0)
+  assert_eq(present.text, "T")
+}
+
+///|
+test "MPR permits omitted zero counters only at complete field boundaries" {
+  let prefix = b"\x01\x00\x00\x00\x01\x01\x00\x00"
+  for counts in [b"", b"\x00\x00", b"\x00\x00\x00\x00"] {
+    let record = decode_parametric(param_frame(prefix + counts, 15, Little)).unwrap()
+    assert_eq(record.values.length(), 0)
+    assert_eq(record.states.length(), 0)
+    assert_eq(record.indexes.length(), 0)
+    assert_eq(record.defaults.flags, None)
+  }
+  for
+    partial in [
+      b"\x00", b"\x00\x00\x00", b"\x01\x00", b"\x01\x00\x00\x00", b"\x00\x00\x01\x00",
+    ] {
+    assert_true(
+      try {
+        ignore(decode_parametric(param_frame(prefix + partial, 15, Little)))
+        false
+      } catch {
+        _ => true
+      },
+    )
+  }
+}
+
+///|
 test "MPR rejects nonzero padding in an odd returned state array" {
   assert_true(
     try {

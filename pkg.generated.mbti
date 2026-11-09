@@ -69,6 +69,9 @@ pub struct Analyzer {
   mut have_mir : Bool
   mut have_mrr : Bool
   mut count : Int32
+  mut received : Int32
+  max_records : Int32
+  max_bytes : Int32
   mut closed : Bool
   parts : Array[Part]
   diagnostics : Array[Diagnostic]
@@ -81,7 +84,7 @@ pub struct Analyzer {
 }
 pub fn Analyzer::accept(Self, Frame) -> Unit raise StdfError
 pub fn Analyzer::finish(Self) -> Analysis raise StdfError
-pub fn Analyzer::new() -> Self
+pub fn Analyzer::new(max_records? : Int32, max_bytes? : Int32) -> Self
 
 #derive(@debug.Debug)
 pub(all) struct BatchComparison {

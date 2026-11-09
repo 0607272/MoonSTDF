@@ -87,10 +87,16 @@ pub fn decode_parametric(frame : Frame) -> TestRecord? raise StdfError {
   let indexes : Array[Int32] = []
   let mut index_count = 0
   if frame.sub == 10 {
-    values.push(r.r4())
+    // An invalid RESULT may disappear only with the whole remaining suffix.
+    // Any physical bytes still start a complete R*4, even if flagged invalid.
+    if r.pos != r.data.length() || (flags & 2) == 0 {
+      values.push(r.r4())
+    }
   } else {
-    index_count = r.u2()
-    let result_count = r.u2()
+    // STDF permits zero counters to be omitted at the trailing boundary.
+    // Reading U*2 when any byte remains still rejects a partial counter.
+    index_count = if r.pos == r.data.length() { 0 } else { r.u2() }
+    let result_count = if r.pos == r.data.length() { 0 } else { r.u2() }
     let state_bytes = (index_count + 1) / 2
     // Check both arrays against the bounded body before allocating by counts.
     if state_bytes + result_count * 4 > r.data.length() - r.pos {
