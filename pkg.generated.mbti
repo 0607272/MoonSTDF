@@ -70,6 +70,7 @@ pub struct Analyzer {
   mut have_mrr : Bool
   mut count : Int32
   mut received : Int32
+  mut order : ByteOrder?
   max_records : Int32
   max_bytes : Int32
   mut closed : Bool

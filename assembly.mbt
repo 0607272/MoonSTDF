@@ -64,6 +64,7 @@ pub struct Analyzer {
   mut have_mrr : Bool
   mut count : Int32
   mut received : Int32
+  mut order : ByteOrder?
   max_records : Int32
   max_bytes : Int32
   mut closed : Bool
@@ -88,6 +89,7 @@ pub fn Analyzer::new(
     have_mrr: false,
     count: 0,
     received: 0,
+    order: None,
     max_records,
     max_bytes,
     closed: false,
@@ -280,6 +282,10 @@ pub fn Analyzer::accept(self : Analyzer, frame : Frame) -> Unit raise StdfError 
   if self.count == 0 && (frame.typ != 0 || frame.sub != 10) {
     raise StdfError(frame.offset, "first record must be FAR")
   }
+  if self.order is Some(order) && order != frame.order {
+    raise StdfError(frame.offset, "record byte order differs from FAR")
+  }
+  self.order = Some(frame.order)
   self.received += frame.body.length() + 4
   self.count += 1
   if self.have_mrr {
@@ -395,6 +401,9 @@ pub fn Analyzer::finish(self : Analyzer) -> Analysis raise StdfError {
     raise StdfError(0, "analyzer closed")
   }
   self.closed = true
+  if self.count == 0 {
+    raise StdfError(0, "empty input; FAR required")
+  }
   for _, part in self.pending {
     self.warn(part.offset, "unfinished-part", "PIR has no PRR at EOF")
   }

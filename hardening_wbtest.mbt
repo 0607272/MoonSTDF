@@ -109,3 +109,34 @@ test "JSON option fields are scalar or null not constructor arrays" {
     },
   )
 }
+
+///|
+test "direct analyzer rejects empty and mixed byte order streams" {
+  let empty = Analyzer::new()
+  assert_true(
+    try {
+      ignore(empty.finish())
+      false
+    } catch {
+      _ => true
+    },
+  )
+  let a = Analyzer::new()
+  a.accept({ offset: 0, typ: 0, sub: 10, order: Little, body: b"\x02\x04", })
+  assert_true(
+    try {
+      a.accept({ offset: 6, typ: 200, sub: 1, order: Big, body: b"", })
+      false
+    } catch {
+      _ => true
+    },
+  )
+  assert_true(
+    try {
+      ignore(a.finish())
+      false
+    } catch {
+      _ => true
+    },
+  )
+}
