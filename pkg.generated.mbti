@@ -8,6 +8,12 @@ import {
 // Values
 pub fn decode_frames(Bytes) -> Array[Frame] raise StdfError
 
+pub fn decode_metadata(Frame) -> Metadata? raise StdfError
+
+pub fn decode_parametric(Frame) -> TestRecord? raise StdfError
+
+pub fn decode_part(Frame) -> PartRecord? raise StdfError
+
 // Errors
 #derive(@debug.Debug)
 pub suberror StdfError {
@@ -51,6 +57,70 @@ pub fn Framer::feed(Self, Bytes) -> Array[Frame] raise StdfError
 pub fn Framer::finish(Self) -> Unit raise StdfError
 pub fn Framer::new(max_bytes? : Int32, max_records? : Int32) -> Self
 
+#derive(@debug.Debug)
+pub(all) struct LotInfo {
+  setup : UInt32
+  start : UInt32
+  station : Int32
+  lot : String
+  product : String
+  node : String
+  tester : String
+  job : String
+}
+pub fn LotInfo::to_repr(Self) -> @debug.Repr
+
+#derive(@debug.Debug)
+pub(all) enum Metadata {
+  Far(Int32, Int32)
+  Mir(LotInfo)
+  Mrr(UInt32)
+  Sdr(Int32, Int32, Array[Int32])
+  Wir(Int32, Int32, UInt32, String)
+  Wrr(Int32, Int32, UInt32, UInt32, UInt32?, String)
+  Wcr(WaferGeometry)
+}
+pub fn Metadata::to_repr(Self) -> @debug.Repr
+
+#derive(Eq, @debug.Debug)
+pub(all) enum Outcome {
+  Pass
+  Fail
+  Unknown
+}
+pub fn Outcome::equal(Self, Self) -> Bool
+pub fn Outcome::not_equal(Self, Self) -> Bool
+pub fn Outcome::to_repr(Self) -> @debug.Repr
+
+#derive(Eq, @debug.Debug)
+pub(all) enum PartRecord {
+  Pir(Int32, Int32)
+  Prr(PartResult)
+}
+pub fn PartRecord::equal(Self, Self) -> Bool
+pub fn PartRecord::not_equal(Self, Self) -> Bool
+pub fn PartRecord::to_repr(Self) -> @debug.Repr
+
+#derive(Eq, @debug.Debug)
+pub(all) struct PartResult {
+  head : Int32
+  site : Int32
+  flags : Int32
+  num_tests : Int32
+  hard_bin : Int32
+  soft_bin : Int32?
+  x : Int32?
+  y : Int32?
+  test_ms : UInt32
+  part_id : String
+  part_text : String
+  outcome : Outcome
+  abnormal : Bool
+}
+pub fn PartResult::equal(Self, Self) -> Bool
+pub fn PartResult::not_equal(Self, Self) -> Bool
+pub fn PartResult::to_repr(Self) -> @debug.Repr
+
 pub struct Reader {
   data : Bytes
   order : ByteOrder
@@ -58,14 +128,59 @@ pub struct Reader {
   mut pos : Int32
 }
 pub fn Reader::cn(Self) -> String raise StdfError
+pub fn Reader::end(Self) -> Unit raise StdfError
 pub fn Reader::i1(Self) -> Int32 raise StdfError
 pub fn Reader::i2(Self) -> Int32 raise StdfError
 pub fn Reader::new(Bytes, ByteOrder, Int32) -> Self
+pub fn[T] Reader::optional(Self, (Self) -> T raise StdfError) -> T? raise StdfError
 pub fn Reader::r4(Self) -> Double raise StdfError
+pub fn Reader::remaining(Self) -> Int32
 pub fn Reader::take(Self, Int32) -> Bytes raise StdfError
 pub fn Reader::u1(Self) -> Int32 raise StdfError
 pub fn Reader::u2(Self) -> Int32 raise StdfError
 pub fn Reader::u4(Self) -> UInt32 raise StdfError
+
+#derive(@debug.Debug)
+pub(all) struct TestDefaults {
+  flags : Int32?
+  res_scale : Int32?
+  low_scale : Int32?
+  high_scale : Int32?
+  low : Double?
+  high : Double?
+  units : String?
+}
+pub fn TestDefaults::to_repr(Self) -> @debug.Repr
+
+#derive(@debug.Debug)
+pub(all) struct TestRecord {
+  kind : String
+  number : UInt32
+  head : Int32
+  site : Int32
+  flags : Int32
+  param_flags : Int32
+  values : Array[Double]
+  states : Array[Int32]
+  indexes : Array[Int32]
+  text : String
+  defaults : TestDefaults
+}
+pub fn TestRecord::to_repr(Self) -> @debug.Repr
+
+#derive(@debug.Debug)
+pub(all) struct WaferGeometry {
+  diameter : Double?
+  die_height : Double?
+  die_width : Double?
+  units : Int32
+  flat : Int32
+  center_x : Int32?
+  center_y : Int32?
+  positive_x : Int32
+  positive_y : Int32
+}
+pub fn WaferGeometry::to_repr(Self) -> @debug.Repr
 
 // Type aliases
 

@@ -84,3 +84,31 @@ pub fn Reader::cn(self : Reader) -> String raise StdfError {
   }
   s.to_string()
 }
+
+///|
+pub fn Reader::remaining(self : Reader) -> Int32 {
+  self.data.length() - self.pos
+}
+
+///|
+/// Absence at a legal optional suffix boundary differs from a partial field.
+pub fn[T] Reader::optional(
+  self : Reader,
+  read : (Reader) -> T raise StdfError,
+) -> T? raise StdfError {
+  if self.remaining() == 0 {
+    None
+  } else {
+    Some(read(self))
+  }
+}
+
+///|
+pub fn Reader::end(self : Reader) -> Unit raise StdfError {
+  if self.remaining() != 0 {
+    raise StdfError(
+      self.base + self.pos,
+      "unexpected trailing bytes in V4 record",
+    )
+  }
+}
