@@ -1,0 +1,52 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        target: [js, wasm, wasm-gc]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install official MoonBit toolchain
+        run: |
+          curl -fsSL https://cli.moonbitlang.com/install/unix.sh | bash
+          echo "$HOME/.moon/bin" >> "$GITHUB_PATH"
+      - name: Record toolchain
+        run: moon version --all
+      - name: Check
+        run: moon check --target ${{ matrix.target }} --deny-warn
+      - name: Build
+        run: moon build --target ${{ matrix.target }} --deny-warn
+      - name: Test
+        run: moon test --target ${{ matrix.target }} --deny-warn
+      - name: Run portable example
+        run: moon run examples/demo --target ${{ matrix.target }}
+      - name: Check formatting and public interfaces
+        if: matrix.target == 'js'
+        run: |
+          moon fmt --check
+          moon info
+          git diff --exit-code -- '*.mbti'
+      - name: Reproduce fixtures and exercise CLI and browser core
+        if: matrix.target == 'js'
+        run: |
+          python tools/generate_fixtures.py --check
+          python tools/test_cli.py
+          python tools/build_web.py
+          python tools/test_web.py

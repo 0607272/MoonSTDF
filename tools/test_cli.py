@@ -16,6 +16,32 @@ def run(*args, ok=True):
 def main():
     assert CLI.exists(), f'Build CLI first: missing {CLI}'
     assert 'MoonSTDF' in run('--help').stdout
+    expected=json.loads((ROOT/'fixtures/expected.json').read_text(encoding='utf-8'))
+    for name,want in expected.items():
+        path=ROOT/'fixtures'/name
+        if 'expected_error' in want:
+            malformed=run('analyze',path,ok=False)
+            assert malformed.returncode==2 and 'truncated' in malformed.stderr.lower()
+            continue
+        report=json.loads(run('analyze',path).stdout)
+        assert report['record_count']==want['record_count'],name
+        assert report['yield']==want['yield'],name
+        assert len(report['parts'])==len(want['parts']),name
+        for part,target in zip(report['parts'],want['parts']):
+            for key in ('head','site','x','y','outcome','hard_bin','soft_bin'):
+                assert part[key]==target[key],(name,key)
+            assert len(part['tests'])==target['test_count'],name
+        if 'ptr_100_mean' in want:
+            tests={t['context']['test_number']:t for t in report['tests']}
+            assert tests[100]['mean']==want['ptr_100_mean']
+            assert tests[100]['usable_samples']==tests[100]['executions']==2
+            assert tests[200]['mean']==want['mpr_200_mean']
+            assert tests[200]['usable_samples']==2 and tests[200]['executions']==1
+            assert tests[300]['executions']==1
+            assert not report['diagnostics'],(name,report['diagnostics'])
+        else:
+            assert all(not t['values'] for part in report['parts'] for t in part['tests'])
+        assert len(report['unknown_records'])==(3 if 'ptr_100_mean' in want else 0)
     with tempfile.TemporaryDirectory() as tmp:
         p = Path(tmp)
         bad = p/'bad.stdf'
@@ -43,7 +69,8 @@ def main():
             csv = run('analyze',fixture,'--format','csv').stdout
             assert 'source_offset' in csv and len(csv.splitlines()) == 3
             comparison=json.loads(run('compare',fixture,ROOT/'fixtures/lot-b-le.stdf').stdout)
-            assert comparison['tests']
+            ptr=next(t for t in comparison['tests'] if t['context']['test_number']==100)
+            assert ptr['mean_delta']==1.0 and ptr['failure_rate_delta']==0.0
             recovery=json.loads(run('retest',fixture,ROOT/'fixtures/retest-le.stdf','--identity','coordinates').stdout)
             assert recovery['matched']==2 and recovery['recovered']==1
             run('analyze',fixture,'--format','xml',ok=False)
