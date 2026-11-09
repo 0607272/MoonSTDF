@@ -38,7 +38,7 @@ fn signature_json(s : TestSignature) -> Json {
   {
     "kind": j(s.kind),
     "test_number": j(s.number),
-    "units": j(s.units),
+    "units": option_json(s.units),
     "low_limit": number_json(s.low),
     "high_limit": number_json(s.high),
     "low_equality_passes": j(s.low_equal),
@@ -89,15 +89,15 @@ fn part_json(p : Part) -> Json {
   let r = p.result
   {
     "lot": j(p.lot),
-    "wafer": j(p.wafer),
+    "wafer": option_json(p.wafer),
     "head": j(r.head),
     "site": j(r.site),
     "part_id": j(r.part_id),
     "part_text": j(r.part_text),
-    "x": j(r.x),
-    "y": j(r.y),
+    "x": option_json(r.x),
+    "y": option_json(r.y),
     "hard_bin": j(r.hard_bin),
-    "soft_bin": j(r.soft_bin),
+    "soft_bin": option_json(r.soft_bin),
     "outcome": j(outcome_name(r.outcome)),
     "abnormal": j(r.abnormal),
     "flags": j(r.flags),
@@ -124,10 +124,10 @@ pub fn report_json(a : Analysis) -> String {
       "kind": j(s.kind),
       "head": j(s.head),
       "site": j(s.site),
-      "number": j(s.number),
-      "count": j(s.count),
-      "good": j(s.good),
-      "fails": j(s.fails),
+      "number": option_json(s.number),
+      "count": option_json(s.count),
+      "good": option_json(s.good),
+      "fails": option_json(s.fails),
       "label": j(s.label),
     }
   })
@@ -380,4 +380,12 @@ pub fn comparison_json(c : BatchComparison) -> String {
     "diagnostics": Json::array(c.diagnostics.map(diagnostic_json)),
   }
   root.stringify(indent=2)
+}
+
+///|
+fn[T : @json.ToJson] option_json(value : T?) -> Json {
+  match value {
+    Some(v) => j(v)
+    None => Json::null()
+  }
 }

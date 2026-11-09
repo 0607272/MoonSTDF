@@ -63,6 +63,9 @@ pub struct Analyzer {
   mut have_mir : Bool
   mut have_mrr : Bool
   mut count : Int32
+  mut received : Int32
+  max_records : Int32
+  max_bytes : Int32
   mut closed : Bool
   parts : Array[Part]
   diagnostics : Array[Diagnostic]
@@ -75,12 +78,18 @@ pub struct Analyzer {
 }
 
 ///|
-pub fn Analyzer::new() -> Analyzer {
+pub fn Analyzer::new(
+  max_records~ : Int32 = 1000000,
+  max_bytes~ : Int32 = 268435456,
+) -> Analyzer {
   {
     lot: "",
     have_mir: false,
     have_mrr: false,
     count: 0,
+    received: 0,
+    max_records,
+    max_bytes,
     closed: false,
     parts: [],
     diagnostics: [],
@@ -261,6 +270,17 @@ pub fn Analyzer::accept(self : Analyzer, frame : Frame) -> Unit raise StdfError 
   errdefer {
     self.closed = true
   }
+  validate_frame(frame)
+  if self.count >= self.max_records {
+    raise StdfError(frame.offset, "record budget exceeded")
+  }
+  if frame.body.length() + 4 > self.max_bytes - self.received {
+    raise StdfError(frame.offset, "input byte budget exceeded")
+  }
+  if self.count == 0 && (frame.typ != 0 || frame.sub != 10) {
+    raise StdfError(frame.offset, "first record must be FAR")
+  }
+  self.received += frame.body.length() + 4
   self.count += 1
   if self.have_mrr {
     raise StdfError(frame.offset, "record after MRR")

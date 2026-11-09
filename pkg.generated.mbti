@@ -133,7 +133,8 @@ pub fn Frame::not_equal(Self, Self) -> Bool
 pub fn Frame::to_repr(Self) -> @debug.Repr
 
 pub struct Framer {
-  mut pending : Bytes
+  pending : Array[Byte]
+  mut target : Int32
   mut offset : Int32
   mut received : Int32
   mut count : Int32

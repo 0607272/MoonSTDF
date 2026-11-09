@@ -17,6 +17,7 @@ pub(all) struct Summary {
 /// PCR/HBR/SBR/TSR analysis projections. All present fields are checked even
 /// when not projected; legal omitted suffixes do not invent zero counts.
 pub fn decode_summary(frame : Frame) -> Summary? raise StdfError {
+  validate_frame(frame)
   let kind = match (frame.typ, frame.sub) {
     (1, 30) => "PCR"
     (1, 40) => "HBR"
@@ -109,6 +110,7 @@ fn functional_bitmap(r : Reader) -> Unit raise StdfError {
 /// PATG_NUM/SPIN_MAP defaults are not resolved because neither is analyzed or
 /// projected here. All TestDefaults fields are absent; TEST_TXT never inherits.
 pub fn decode_functional(frame : Frame) -> TestRecord? raise StdfError {
+  validate_frame(frame)
   if frame.typ != 15 || frame.sub != 20 {
     return None
   }

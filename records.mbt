@@ -65,9 +65,19 @@ fn Reader::strings(
 ///|
 /// V4 metadata projections. Unknown record types are left to the caller.
 pub fn decode_metadata(frame : Frame) -> Metadata? raise StdfError {
+  validate_frame(frame)
   let r = Reader::new(frame.body, frame.order, frame.offset + 4)
   let result = match (frame.typ, frame.sub) {
-    (0, 10) => Some(Far(r.u1(), r.u1()))
+    (0, 10) => {
+      let cpu = r.u1()
+      let version = r.u1()
+      if version != 4 ||
+        !((cpu == 1 && frame.order == Big) ||
+        (cpu == 2 && frame.order == Little)) {
+        raise StdfError(frame.offset, "unsupported or inconsistent FAR")
+      }
+      Some(Far(cpu, version))
+    }
     (1, 10) => {
       let setup = r.u4()
       let start = r.u4()

@@ -112,3 +112,16 @@ pub fn Reader::end(self : Reader) -> Unit raise StdfError {
     )
   }
 }
+
+///|
+fn validate_frame(frame : Frame) -> Unit raise StdfError {
+  if frame.offset < 0 ||
+    frame.offset > 2147418108 ||
+    frame.typ < 0 ||
+    frame.typ > 255 ||
+    frame.sub < 0 ||
+    frame.sub > 255 ||
+    frame.body.length() > 65535 {
+    raise StdfError(frame.offset, "invalid V4 record bounds")
+  }
+}

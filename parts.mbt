@@ -40,6 +40,7 @@ pub(all) enum PartRecord {
 /// PART_FLG bit 2 is independent of outcome: yield policy must explicitly
 /// exclude abnormal parts when counting successful completions.
 pub fn decode_part(frame : Frame) -> PartRecord? raise StdfError {
+  validate_frame(frame)
   if frame.typ != 5 || (frame.sub != 10 && frame.sub != 20) {
     return None
   }
