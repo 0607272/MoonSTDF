@@ -12,6 +12,8 @@ pub fn compare_batches(Array[Part], Array[Part]) -> BatchComparison
 
 pub fn compare_retests(Array[Part], Array[Part], RetestIdentity) -> RetestReport
 
+pub fn comparison_json(BatchComparison) -> String
+
 pub fn decode_frames(Bytes) -> Array[Frame] raise StdfError
 
 pub fn decode_functional(Frame) -> TestRecord? raise StdfError
@@ -31,6 +33,8 @@ pub fn parts_csv(Array[Part]) -> String
 pub fn report_html(Analysis) -> String
 
 pub fn report_json(Analysis) -> String
+
+pub fn retest_json(RetestReport) -> String
 
 pub fn select_retests(Array[Part], RetestPolicy, RetestIdentity) -> RetestSelection
 
