@@ -31,7 +31,7 @@ pub fn Reader::u1(self : Reader) -> Int32 raise StdfError {
 pub fn Reader::u2(self : Reader) -> Int32 raise StdfError {
   let a = self.u1()
   let b = self.u1()
-  if self.order == Little {
+  if self.order != Big {
     a | (b << 8)
   } else {
     (a << 8) | b
@@ -42,7 +42,7 @@ pub fn Reader::u2(self : Reader) -> Int32 raise StdfError {
 pub fn Reader::u4(self : Reader) -> UInt32 raise StdfError {
   let a = self.u2().reinterpret_as_uint()
   let b = self.u2().reinterpret_as_uint()
-  if self.order == Little {
+  if self.order != Big {
     a | (b << 16)
   } else {
     (a << 16) | b
@@ -71,7 +71,62 @@ pub fn Reader::i2(self : Reader) -> Int32 raise StdfError {
 
 ///|
 pub fn Reader::r4(self : Reader) -> Double raise StdfError {
+  if self.order == Vax {
+    return self.vax_real(2)
+  }
   Float::reinterpret_from_uint(self.u4()).to_double()
+}
+
+///|
+pub fn Reader::r8(self : Reader) -> Double raise StdfError {
+  if self.order == Vax {
+    return self.vax_real(4)
+  }
+  let a = self.u4().to_uint64()
+  let b = self.u4().to_uint64()
+  let bits = if self.order == Little { a | (b << 32) } else { (a << 32) | b }
+  bits.reinterpret_as_double()
+}
+
+///|
+/// VAX F and D store the sign/exponent word first, with little-endian bytes
+/// within each 16-bit word. The implicit mantissa is 0.1 binary, bias 128.
+/// D's 56 significant bits round to the host's IEEE binary64 precision.
+fn Reader::vax_real(self : Reader, words : Int32) -> Double raise StdfError {
+  let first = self.u2()
+  let exponent = (first >> 7) & 255
+  let negative = (first & 32768) != 0
+  // Keep all 24/56 significant bits as an integer until the sole rounding
+  // to binary64, avoiding double rounding around a binary64 midpoint.
+  let mut mantissa = (128 | (first & 127)).to_uint64()
+  for _ in 1..<words {
+    mantissa = (mantissa << 16) | self.u2().to_uint64()
+  }
+  if exponent == 0 {
+    if negative {
+      raise StdfError(
+        self.base + self.pos - words * 2,
+        "VAX reserved floating operand",
+      )
+    }
+    return 0.0
+  }
+  let mut value = mantissa.to_double() /
+    (if words == 2 { 16777216.0 } else { 72057594037927936.0 })
+  if exponent >= 128 {
+    for _ in 0..<(exponent - 128) {
+      value *= 2.0
+    }
+  } else {
+    for _ in 0..<(128 - exponent) {
+      value /= 2.0
+    }
+  }
+  if negative {
+    -value
+  } else {
+    value
+  }
 }
 
 ///|

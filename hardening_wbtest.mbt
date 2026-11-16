@@ -94,6 +94,7 @@ test "JSON option fields are scalar or null not constructor arrays" {
     parts: [report_part("A")],
     diagnostics: [],
     summaries: [],
+    ancillary_records: [],
     unknown: [],
     record_count: 1,
   }

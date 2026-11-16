@@ -42,6 +42,7 @@ pub(all) struct Analysis {
   parts : Array[Part]
   diagnostics : Array[Diagnostic]
   summaries : Array[Summary]
+  ancillary_records : Array[AncillaryRecord]
   unknown : Array[Frame]
   record_count : Int32
 }
@@ -62,6 +63,7 @@ pub struct Analyzer {
   mut lot : String
   mut have_mir : Bool
   mut have_mrr : Bool
+  mut have_pcr : Bool
   mut count : Int32
   mut received : Int32
   mut order : ByteOrder?
@@ -71,11 +73,13 @@ pub struct Analyzer {
   parts : Array[Part]
   diagnostics : Array[Diagnostic]
   summaries : Array[Summary]
+  ancillary_records : Array[AncillaryRecord]
   unknown : Array[Frame]
   groups : Map[String, Int32]
   wafers : Map[String, String]
   pending : Map[String, PendingPart]
   defaults : Map[String, TestDefaults]
+  validator : V4Validator
 }
 
 ///|
@@ -87,6 +91,7 @@ pub fn Analyzer::new(
     lot: "",
     have_mir: false,
     have_mrr: false,
+    have_pcr: false,
     count: 0,
     received: 0,
     order: None,
@@ -96,11 +101,13 @@ pub fn Analyzer::new(
     parts: [],
     diagnostics: [],
     summaries: [],
+    ancillary_records: [],
     unknown: [],
     groups: {},
     wafers: {},
     pending: {},
     defaults: {},
+    validator: V4Validator::new(max_records~, max_bytes~),
   }
 }
 
@@ -291,10 +298,11 @@ pub fn Analyzer::accept(self : Analyzer, frame : Frame) -> Unit raise StdfError 
   if self.have_mrr {
     raise StdfError(frame.offset, "record after MRR")
   }
+  self.validator.accept(frame)
   if decode_metadata(frame) is Some(meta) {
     match meta {
       Far(cpu, ver) =>
-        if self.count != 1 || ver != 4 || (cpu != 1 && cpu != 2) {
+        if self.count != 1 || ver != 4 || (cpu != 0 && cpu != 1 && cpu != 2) {
           raise StdfError(frame.offset, "invalid FAR position/version/CPU")
         }
       Mir(info) => {
@@ -304,7 +312,12 @@ pub fn Analyzer::accept(self : Analyzer, frame : Frame) -> Unit raise StdfError 
         self.have_mir = true
         self.lot = info.lot
       }
-      Mrr(_) => self.have_mrr = true
+      Mrr(_) => {
+        if !self.have_pcr {
+          raise StdfError(frame.offset, "MRR requires a preceding PCR")
+        }
+        self.have_mrr = true
+      }
       Sdr(head, group, sites) =>
         for site in sites {
           self.groups[pair_key(head, site)] = group
@@ -388,7 +401,17 @@ pub fn Analyzer::accept(self : Analyzer, frame : Frame) -> Unit raise StdfError 
     return
   }
   if decode_summary(frame) is Some(summary) {
+    if summary.kind == "PCR" {
+      if !self.have_mir {
+        raise StdfError(frame.offset, "PCR must follow MIR")
+      }
+      self.have_pcr = true
+    }
     self.summaries.push(summary)
+    return
+  }
+  if decode_ancillary(frame) is Some(record) {
+    self.ancillary_records.push(record)
     return
   }
   self.unknown.push(frame)
@@ -413,13 +436,24 @@ pub fn Analyzer::finish(self : Analyzer) -> Analysis raise StdfError {
   if !self.have_mrr {
     self.warn(0, "missing-mrr", "no MRR lot terminator")
   }
+  if !self.have_pcr {
+    self.warn(0, "missing-pcr", "no PCR part count record")
+  }
   if self.wafers.length() > 0 {
     self.warn(0, "unfinished-wafer", "WIR has no WRR at EOF")
+  }
+  for diagnostic in self.validator.finish().diagnostics {
+    if !self.diagnostics.any(fn(existing) {
+        existing.code == diagnostic.code && existing.offset == diagnostic.offset
+      }) {
+      self.diagnostics.push(diagnostic)
+    }
   }
   {
     parts: self.parts,
     diagnostics: self.diagnostics,
     summaries: self.summaries,
+    ancillary_records: self.ancillary_records,
     unknown: self.unknown,
     record_count: self.count,
   }

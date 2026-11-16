@@ -139,7 +139,7 @@ def walk_records(data: bytes) -> list[tuple[int, int, bytes]]:
     """Independent record-length oracle; no MoonSTDF/native parser needed."""
     if len(data) < 6 or data[2:4] != bytes([0, 10]) or data[5] != 4:
         raise ValueError("missing V4 FAR")
-    endian = {1: ">", 2: "<"}[data[4]]
+    endian = {0: "<", 1: ">", 2: "<"}[data[4]]
     out = []
     offset = 0
     while offset < len(data):

@@ -8,6 +8,8 @@ dependencies and does not import MoonSTDF.
 ```sh
 python tools/generate_fixtures.py
 python tools/generate_fixtures.py --check
+python tools/generate_v4_coverage.py
+python tools/generate_v4_coverage.py --check
 ```
 
 | File | Expected behavior |
@@ -18,6 +20,9 @@ python tools/generate_fixtures.py --check
 | `retest-le.stdf` | Same lot/wafer/part IDs and coordinates as lot A, second part recovers; voltage values 1 and 2 V, yield 1.0 |
 | `optional-boundaries-le.stdf` | Legal omitted invalid PTR RESULT, omitted zero MPR counters at both boundaries; 1 part, 3 executions, no numeric samples |
 | `malformed-truncated.stdf` | Lot A with the final MRR body byte removed; must fail at EOF |
+| `v4-all-records-le.stdf` | All 25 active base V4 types, all fields populated, IEEE little endian; 27 records including 3 PMRs |
+| `v4-all-records-be.stdf` | Same full-field values with IEEE big endian |
+| `v4-all-records-vax.stdf` | Same full-field values with CPU_TYPE 0 VAX F/D floating point and little-endian integers |
 
 The normal files contain FAR, all five required MIR identity strings, SDR
 group 7 mapping head 1 sites 1 and 2, WIR, WCR geometry, default-only PTR
@@ -28,8 +33,9 @@ PTR is not an execution. Three original PMRs identify the MPR's three input
 states; the MPR supplies their indexes and has two output samples, 2.0 and
 2.5 V (mean 2.25 V). This is not a one-result-per-pin measurement. Normal lot
 files have 27 records; the recovery file has 25 because empty fail-bin
-summaries are omitted. PMRs remain raw unknown records in MoonSTDF's current
-typed projection (three unknown records is expected).
+summaries are omitted. The three PMRs are exposed as typed ancillary records;
+their pin indexes can be inspected in JSON; the validator checks that MPR/FTR
+indexes reference previously defined PMRs.
 
 PRR file order is site 2 then site 1 to exercise parallel association.
 The retest file sets PRR coordinate-supersession bit 1; selecting or comparing
@@ -44,3 +50,11 @@ MoonSTDF report schema.
 External decoder checks and product CLI comparisons are recorded separately
 in the development workspace's `docs/moonstdf-differential.md`; the external
 decoder is not a product/runtime dependency and is not bundled here.
+
+`v4-coverage.json` records the full-field fixtures' SHA-256 hashes, field
+counts and every GDR code (including alignment padding). Their independent
+generator uses Python `struct` and a separate VAX encoder.
+`tools/test_v4_coverage.py` checks named fields, preserved bytes, known values,
+representation equivalence, required-file diagnostics and malformed fields.
+These additional fixtures are checked against explicit expectations, not
+claimed as externally certified or tested on customer equipment.

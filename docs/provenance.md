@@ -25,5 +25,12 @@ at EOF with exit code 2. This is a bounded differential check, not a full
 STDF conformance or numerical-analysis certification.
 
 No claim of worldwide originality of the application category is made.
+On 2026-11-16, original all-field fixtures were added for every active base
+V4 record in IEEE LE/BE and VAX F/D representations. The separate Python
+encoder and explicit expected values test the MoonBit decoder without
+importing its implementation. VAX D conversion also has a nearest-binary64
+rounding regression case. These tests extend the evidence but are not a
+third-party conformance certification; no new vendor data was obtained.
+
 The development topic search found no matching STDF tool in the searched
 MoonBit ecosystem scope as of 2026-11-09; that search is not exhaustive.

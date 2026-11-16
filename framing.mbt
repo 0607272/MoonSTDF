@@ -1,9 +1,10 @@
 ///|
-/// Byte order established by the first FAR. CPU_TYPE 0 (VAX) is unsupported.
+/// Representation established by FAR: VAX F/D or IEEE big/little endian.
 #derive(Debug, Eq)
 pub(all) enum ByteOrder {
   Little
   Big
+  Vax
 }
 
 ///|
@@ -91,14 +92,15 @@ pub fn Framer::feed(
         raise StdfError(0, "expected STDF V4 FAR")
       }
       let order = match data[4].to_int() {
+        0 => Vax
         1 => Big
         2 => Little
         _ =>
           raise StdfError(
-            4, "unsupported CPU_TYPE (only IEEE big/little endian)",
+            4, "unsupported CPU_TYPE (reserved or customer-defined encoding)",
           )
       }
-      let length = if order == Little {
+      let length = if order != Big {
         data[0].to_int() | (data[1].to_int() << 8)
       } else {
         (data[0].to_int() << 8) | data[1].to_int()
@@ -110,7 +112,7 @@ pub fn Framer::feed(
     }
     let order = self.order.unwrap()
     if data.length() == 4 {
-      let length = if order == Little {
+      let length = if order != Big {
         data[0].to_int() | (data[1].to_int() << 8)
       } else {
         (data[0].to_int() << 8) | data[1].to_int()

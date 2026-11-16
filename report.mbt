@@ -73,6 +73,183 @@ fn diagnostic_json(d : Diagnostic) -> Json {
 }
 
 ///|
+fn int_array_json(values : Array[Int32]) -> Json {
+  Json::array(values.map(j))
+}
+
+///|
+fn string_array_json(values : Array[String]) -> Json {
+  Json::array(values.map(j))
+}
+
+///|
+fn bytes_json(values : Bytes) -> Json {
+  let bytes = []
+  for value in values {
+    bytes.push(j(value.to_int()))
+  }
+  Json::array(bytes)
+}
+
+///|
+fn generic_value_json(value : GenericValue) -> Json {
+  match value {
+    Padding => { "type": j("B*0") }
+    U1(v) => { "type": j("U*1"), "value": j(v) }
+    U2(v) => { "type": j("U*2"), "value": j(v) }
+    U4(v) => { "type": j("U*4"), "value": j(v) }
+    I1(v) => { "type": j("I*1"), "value": j(v) }
+    I2(v) => { "type": j("I*2"), "value": j(v) }
+    I4(v) => { "type": j("I*4"), "value": j(v) }
+    R4(v) => { "type": j("R*4"), "value": number_json(Some(v)) }
+    R8(v) => { "type": j("R*8"), "value": number_json(Some(v)) }
+    Text(v) => { "type": j("C*n"), "value": j(v) }
+    Binary(v) => { "type": j("B*n"), "value": bytes_json(v) }
+    Bits(count, v) =>
+      { "type": j("D*n"), "bit_count": j(count), "packed": bytes_json(v) }
+    Nibble(v) => { "type": j("N*1"), "value": j(v) }
+  }
+}
+
+///|
+fn v4_value_json(value : V4Value) -> Json {
+  match value {
+    MissingField => { "present": j(false) }
+    UnsignedField(n) =>
+      { "present": j(true), "wire_kind": j("unsigned"), "value": j(n) }
+    SignedField(n) =>
+      { "present": j(true), "wire_kind": j("signed"), "value": j(n) }
+    RealField(n) =>
+      {
+        "present": j(true),
+        "wire_kind": j("real"),
+        "value": number_json(Some(n)),
+        "finite": j(n.is_finite()),
+      }
+    TextField(s) =>
+      { "present": j(true), "wire_kind": j("text"), "value": j(s) }
+    BytesField(b) =>
+      { "present": j(true), "wire_kind": j("bytes"), "value": bytes_json(b) }
+    BitsField(count, b) =>
+      {
+        "present": j(true),
+        "wire_kind": j("bits"),
+        "bit_count": j(count),
+        "value": bytes_json(b),
+      }
+    ArrayField(values) =>
+      {
+        "present": j(true),
+        "wire_kind": j("array"),
+        "value": Json::array(values.map(v4_value_json)),
+      }
+    GenericField(values) =>
+      {
+        "present": j(true),
+        "wire_kind": j("generic"),
+        "value": Json::array(values.map(generic_value_json)),
+      }
+  }
+}
+
+///|
+/// One lossless-source record per JSON line; missing fields stay explicit.
+pub fn v4_record_json(frame : Frame) -> String raise StdfError {
+  let decoded = decode_v4_record(frame)
+  let name = match decoded {
+    Some(record) => record.name
+    None => "unknown"
+  }
+  let fields = match decoded {
+    Some(record) =>
+      record.fields.map(fn(field) -> Json {
+        { "name": j(field.name), "decoded": v4_value_json(field.value) }
+      })
+    None => []
+  }
+  let root : Json = {
+    "schema": j("moonstdf/record/1"),
+    "name": j(name),
+    "offset": j(frame.offset),
+    "type": j(frame.typ),
+    "subtype": j(frame.sub),
+    "body_length": j(frame.body.length()),
+    "representation": j(
+      match frame.order {
+        Little => "ieee-le"
+        Big => "ieee-be"
+        Vax => "vax-f-d"
+      },
+    ),
+    "fields": Json::array(fields),
+    "raw_body": bytes_json(frame.body),
+  }
+  root.stringify()
+}
+
+///|
+pub fn validation_json(report : ValidationReport) -> String {
+  let root : Json = {
+    "schema": j("moonstdf/validation/1"),
+    "valid": j(report.valid),
+    "scope": j(
+      "base STDF V4; CPU_TYPE 0/1/2; structural, sequence and reference checks",
+    ),
+    "record_count": j(report.record_count),
+    "record_counts": j(report.record_counts),
+    "diagnostics": Json::array(report.diagnostics.map(diagnostic_json)),
+  }
+  root.stringify(indent=2)
+}
+
+///|
+fn ancillary_json(record : AncillaryRecord) -> Json {
+  match record {
+    Atr(time, command) =>
+      {
+        "type": j("ATR"),
+        "modification_time": j(time),
+        "command_line": j(command),
+      }
+    Pmr(index, channel, channel_name, physical_name, logical_name, head, site) =>
+      {
+        "type": j("PMR"),
+        "index": j(index),
+        "channel_type": j(channel),
+        "channel_name": j(channel_name),
+        "physical_name": j(physical_name),
+        "logical_name": j(logical_name),
+        "head": j(head),
+        "site": j(site),
+      }
+    Pgr(index, name, pins) =>
+      {
+        "type": j("PGR"),
+        "index": j(index),
+        "name": j(name),
+        "pin_indexes": int_array_json(pins),
+      }
+    Plr(indexes, modes, radixes, chars) =>
+      {
+        "type": j("PLR"),
+        "group_indexes": int_array_json(indexes),
+        "modes": int_array_json(modes),
+        "radixes": int_array_json(radixes),
+        "characters": Json::array(chars.map(string_array_json)),
+      }
+    Rdr(bins) => { "type": j("RDR"), "retest_bins": int_array_json(bins) }
+    Bps(name) => { "type": j("BPS"), "sequence_name": j(name) }
+    Eps => { "type": j("EPS") }
+    Gdr(values) =>
+      {
+        "type": j("GDR"),
+        "values": Json::array(values.map(generic_value_json)),
+      }
+    Dtr(text) => { "type": j("DTR"), "text": j(text) }
+  }
+}
+
+///|
 fn measurement_json(m : Measurement) -> Json {
   {
     "context": signature_json(test_signature(m)),
@@ -151,6 +328,7 @@ pub fn report_json(a : Analysis) -> String {
     "tests": Json::array(test_statistics(a.parts).map(statistic_json)),
     "parts": Json::array(a.parts.map(part_json)),
     "reported_summaries": Json::array(summaries),
+    "ancillary_records": Json::array(a.ancillary_records.map(ancillary_json)),
     "unknown_records": Json::array(unknown),
     "diagnostics": Json::array(diagnostics.map(diagnostic_json)),
   }

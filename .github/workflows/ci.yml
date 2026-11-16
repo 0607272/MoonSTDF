@@ -47,6 +47,8 @@ jobs:
         if: matrix.target == 'js'
         run: |
           python tools/generate_fixtures.py --check
+          python tools/generate_v4_coverage.py --check
           python tools/test_cli.py
+          python tools/test_v4_coverage.py
           python tools/build_web.py
           python tools/test_web.py

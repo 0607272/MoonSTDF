@@ -1,42 +1,72 @@
-# STDF V4 support matrix
+# STDF V4 支持范围与证据
 
-Scope: base STDF V4, CPU_TYPE 1 (big endian) and 2 (little endian).
-This is a typed projection and analysis library, not a complete validator.
+MoonSTDF **完整支持基础 STDF V4 解析**：覆盖下表全部 25 种在用记录及其全部标准字段，包括可选尾部、计数数组、位图、半字节数组和 GDR 泛型数据。解析终点是“记录帧 → 按规范命名的字段和值 + 保留的原始字节”，不以良率报告中是否显示该字段作为支持与否的依据。
 
-| Records / layer | Implemented | Boundary |
-|---|---|---|
-| Framing | REC_LEN/REC_TYP/REC_SUB, FAR detection, offsets, incremental feeds, truncated EOF and budgets | Uncompressed input only; no V4-2007 extensions |
-| FAR | CPU, version, length and order consistency | Must be first; CPU 0 unsupported |
-| MIR/MRR | Lot identity subset and lot termination | Other fields structurally consumed, not all exposed |
-| SDR/WIR/WRR | Head/site-group membership, wafer identity, lifecycle | Missing membership may use sole same-head wafer with a diagnostic; ambiguity stays unresolved |
-| WCR | Dimensions, center and orientation fields | Analyzer does not apply physical coordinate transformations |
-| PIR/PRR | Part lifecycle, outcome/abnormal flags, coordinates, bins, ID | Missing/unfinished parts are diagnosed; no automatic supersession |
-| PTR | Value, status, text, optional limits/units/display defaults | Legal omitted invalid RESULT accepted; no fabricated zero; fields beyond projection not analyzed |
-| MPR | Values, packed return states/indexes, optional defaults | Sample and execution counts differ; no one-result-per-pin assumption |
-| FTR | Status, text, returned indexes/states; full structural cursor checks | No numeric synthetic result; no PATG/SPIN_MAP default resolution or pin failure analysis |
-| PCR/HBR/SBR/TSR | Selected counts, labels and guarded reconciliation | Not full summary semantics or proof of complete acquisition |
-| Other records incl. PMR | Frame body/order/offset retained as raw unknown | No typed validation; can contain vendor-specific or sensitive payloads |
-| Statistics | Explicit yield denominators, grouped yields, finite distributions and population SD | Reported outcomes and numeric limit violations remain separate |
-| Retest | Explicit first/last, coordinate/part-ID identity, pair recovery/bin migration | No inferred timestamps, global serial identities or automatic disposition |
-| Comparison | Exact compatible signatures, mean/fail-rate deltas | No unit conversion, normalization or significance tests |
-| Exports | JSON, parts CSV, offline HTML with logical SVG maps | No round-trip writer; CSV formula-leading text escaped |
+依据 [Teradyne STDF V4](https://github.com/Semi-ATE/Semi-ATE/blob/d2febc29c08cf65d21277628ac9bb50724a9ae46/old-docs/standards/STDF/STDF-V4-spec.pdf)。基础 V4 与后续 V4-2007 扩展分别处理；本版本不包含后者的新增记录。
 
-Strings use single-byte STDF character decoding, not arbitrary Unicode or a
-vendor locale detector. Optional tails are accepted only at valid field
-boundaries; partial fields are rejected. Some reserved bits are checked, but
-not every standard semantic invariant is implemented. Unknown records are
-preserved rather than certified.
+## 记录覆盖
 
-Both Framer and Analyzer enforce configurable byte/record budgets. Total
-memory additionally includes decoded objects, result arrays and report text;
-the default 256 MiB input limit is not a memory-use guarantee. Browser analysis
-currently runs on the main thread and parses once each for JSON and HTML.
+下列记录统一由 `decode_v4_record` 返回完整字段，由 `dump` 导出。后两列区分字段解析与校验、应用分析。
 
-Reports contain lot IDs, part IDs and raw unknown bytes. The tool performs no
-network upload, but users should review report contents before sharing them.
+| ID | 记录 | 全字段解析 | 校验或分析用途 |
+|---|---|---|---|
+| 0/10 | FAR | 全部 2 字段 | 首记录、版本、CPU 表示一致性 |
+| 0/20 | ATR | 全部 2 字段 | FAR 后、MIR 前的审计记录 |
+| 1/10 | MIR | 全部 38 字段 | 唯一主信息、5 个必需身份字符串、批次关联 |
+| 1/20 | MRR | 全部 4 字段 | 唯一终记录、文件结束检查 |
+| 1/30 | PCR | 全部 7 字段 | 至少 1 条、芯片计数核对 |
+| 1/40 | HBR | 全部 6 字段 | 硬件分档及计数核对 |
+| 1/50 | SBR | 全部 6 字段 | 软件分档及计数核对 |
+| 1/60 | PMR | 全部 7 字段 | 索引范围 1..32767、唯一性、引脚定义 |
+| 1/62 | PGR | 全部 4 字段 | 组索引范围 32768..65535、唯一性、先前 PMR 引用 |
+| 1/63 | PLR | 全部 8 字段 | 引脚/组引用；GRP_MODE 为 U*2，显示字符原样提供 |
+| 1/70 | RDR | 全部 2 字段 | 复测分档数组、紧随 MIR 的顺序 |
+| 1/80 | SDR | 全部 20 字段 | 初始顺序、站点组与晶圆关联 |
+| 2/10 | WIR | 全部 4 字段 | 按 head/group 跟踪晶圆开始 |
+| 2/20 | WRR | 全部 14 字段 | 晶圆结束、孤立结束和身份不匹配诊断 |
+| 2/30 | WCR | 全部 9 字段 | 几何尺寸及方向；图表使用原始逻辑坐标 |
+| 5/10 | PIR | 全部 2 字段 | 多站点芯片开始、重复开始诊断 |
+| 5/20 | PRR | 全部 12 字段 | 芯片结束、结果标志、身份、分档及坐标 |
+| 10/30 | TSR | 全部 16 字段 | 执行/失败计数核对；全部统计字段可导出 |
+| 15/10 | PTR | 全部 20 字段 | 测试标志、合法缺失结果、默认数据、数值分布 |
+| 15/15 | MPR | 全部 27 字段 | 状态/结果数组、引脚引用、默认数据、数值分布 |
+| 15/20 | FTR | 全部 28 字段 | 状态/索引数组、位图、引脚引用及测试结果 |
+| 20/10 | BPS | 全部 1 字段 | 可省略名称、嵌套程序段及芯片上下文 |
+| 20/20 | EPS | 无字段 | 程序段配对、孤立结束及未结束程序段 |
+| 50/10 | GDR | 全部 2 字段 | 数据码 0/1/2/3/4/5/6/7/8/10/11/12/13，含填充与 R*8 |
+| 50/30 | DTR | 全部 1 字段 | 文本原样提供 |
 
-Supported tested targets: JS, Wasm, WasmGC. The file CLI and web bridge are
-JS-only packages; the library and `examples/demo` are portable. Native source
-checking succeeds, but Native execution is not currently part of the support
-promise. Tests use original synthetic inputs; broader vendor interoperability
-remains future work.
+## 数据表示与输出契约
+
+- CPU_TYPE 0：VAX，整数及记录头为小端，R*4/R*8 使用 VAX F/D；CPU_TYPE 1：IEEE 大端；CPU_TYPE 2：IEEE 小端。保留 CPU 表示并检查 FAR 一致性。保留/厂商自定义 CPU 编码无公开标准表示，明确报错。
+- `V4Record` 含名称、全部 `V4Field` 以及原始 `Frame`；未知记录返回 `None`，原始帧仍可读取，校验器给出 `unknown-record` 诊断。未知扩展不冒充基础 V4 支持。
+- `MissingField` 区分物理省略与显式零/空串；PLR 尾部数组可保留逐元素省略。字段只允许在规范认可的边界省略，半个标量、长度越界、缺失必需数组或非零位填充均报错。
+- C*n/C*1 逐字节映射 Latin-1，不猜测厂商字符集；B*n/D*n 保留字节及有效位数。N*1 为低半字节在先。
+- R*4 转为 `Double`；VAX D 的 56 位有效精度舍入到 binary64 的 53 位。原始字节保留原精度。IEEE 非有限值在 JSON 中为 `null`，并附 `finite: false`，不会输出非法 JSON 数字。
+- `dump` 输出 `moonstdf/record/1` JSONL，含字段、原始记录体、偏移、长度和表示。记录头的长度/类型/子类型也在对象中提供，可追溯源记录；此版本不提供 STDF 写回。
+- `validate` 输出 `moonstdf/validation/1`，含记录数、分类计数和带偏移的诊断。格式损坏或诊断不为空时 CLI 退出 2。`dump` 为流式输出，后部损坏时已输出的有效前缀仍可能存在，应检查退出码。
+
+## 校验与分析的边界
+
+校验器检查必需 FAR/MIR/PCR/MRR、初始 `FAR ATR* MIR RDR? SDR*` 顺序、终记录位置、引脚和组引用、程序段配对、芯片/晶圆生命周期及部分保留标志。`valid: true` 表示这些已列出的检查未发现问题；不代表标准符合性认证、采集完整性证明或每一项业务规则的穷尽检查。
+
+分析层另提供芯片重建、默认测试数据、显式复测策略、分布和可比批次对照。完整字段导出不代表全部字段都参与统计：例如 PLR 显示字符、FTR PATG/SPIN_MAP 已可读取，尚未绘制引脚波形或推断厂商执行语义。MPR 的输入状态数与结果数可不同，不作逐引脚一一对应假设；其默认数据后缀可合法继承。
+
+默认预算每文件 256 MiB、1,000,000 条记录；库可降低预算。分帧与导出逐块进行，校验保留索引/生命周期状态，分析另保留观测，预算并非总内存承诺。CLI 每次读取 64 KiB，拒绝输出覆盖输入（包括可识别的文件别名）。报告保留批次和芯片身份信息，所有计算均在本地进行。
+
+## 可复现证据
+
+```sh
+moon test --target js --deny-warn
+moon test --target wasm --deny-warn
+moon test --target wasm-gc --deny-warn
+moon build --target js --deny-warn
+python tools/generate_fixtures.py --check
+python tools/generate_v4_coverage.py --check
+python tools/test_cli.py
+python tools/test_v4_coverage.py
+```
+
+`v4-all-records-{le,be,vax}.stdf` 每份含 27 条记录，覆盖 25 种记录全部字段和所有 GDR 类型。独立 Python 生成器使用已知原始值与定长布局，测试核对原始字节、字段数量、全部字段存在、具体数值和跨表示一致性；清单记录 SHA-256。MoonBit 测试另覆盖 25 种最小记录的必需前缀逐字节截断、合法省略、非法长度和 VAX D 舍入边界。
+
+所有样本均为原创合成数据。先前 5 份业务样本已与 Semi-ATE-STDF 0.1.28 作有限字段差分核对；新增全字段样本的证据是独立生成器与期望值测试，不混称第三方认证。尚未建立真实厂商文件语料，跨厂商互操作仍需扩展。已验证目标为 JS/Wasm/WasmGC；Native、V4-2007、压缩封装、ATDF、硬件采集及自动量产放行不在当前支持范围。

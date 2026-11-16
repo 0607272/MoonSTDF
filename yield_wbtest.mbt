@@ -35,7 +35,14 @@ fn yield_part(
 
 ///|
 fn yield_analysis(parts : Array[Part], summaries : Array[Summary]) -> Analysis {
-  { parts, summaries, diagnostics: [], unknown: [], record_count: 0, }
+  {
+    parts,
+    summaries,
+    diagnostics: [],
+    ancillary_records: [],
+    unknown: [],
+    record_count: 0,
+  }
 }
 
 ///|

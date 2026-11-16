@@ -29,6 +29,7 @@ test "JSON is parseable versioned and preserves source provenance" {
     parts: [report_part("a\"b")],
     diagnostics: [],
     summaries: [],
+    ancillary_records: [],
     unknown: [],
     record_count: 4,
   }
@@ -37,6 +38,24 @@ test "JSON is parseable versioned and preserves source provenance" {
   assert_true(output.contains("moonstdf/1"))
   assert_true(output.contains("42"))
   assert_true(output.contains("a\\\"b"))
+}
+
+///|
+test "JSON exposes typed ancillary records and GDR R8 numbers" {
+  let a : Analysis = {
+    parts: [],
+    diagnostics: [],
+    summaries: [],
+    ancillary_records: [Gdr([R8(1.0)]), Dtr("note")],
+    unknown: [],
+    record_count: 2,
+  }
+  let output = report_json(a)
+  assert_true(@json.valid(output))
+  assert_true(output.contains("\"ancillary_records\""))
+  assert_true(output.contains("\"type\": \"R*8\""))
+  assert_true(output.contains("\"text\": \"note\""))
+  assert_true(output.contains("\"value\": 1"))
 }
 
 ///|
@@ -53,6 +72,7 @@ test "HTML escapes data and gives coordinate map no executable user content" {
     parts: [report_part("<script>alert(1)</script>")],
     diagnostics: [],
     summaries: [],
+    ancillary_records: [],
     unknown: [],
     record_count: 4,
   }

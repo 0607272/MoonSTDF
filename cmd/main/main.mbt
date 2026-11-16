@@ -42,8 +42,60 @@ fn read_analysis(path : String) -> @moonstdf.Analysis raise @moonstdf.StdfError 
 }
 
 ///|
+extern "js" fn append_output(path : String, content : String) -> Unit =
+  #|(p,s) => { try { if(p==='-') process.stdout.write(s+'\n'); else require('node:fs').appendFileSync(p,s+'\n','utf8'); } catch(e) { process.stderr.write('MoonSTDF: cannot write output: '+e.message+'\n'); process.exit(2); } }
+
+///|
+extern "js" fn invalid_validation() -> Unit =
+  #|() => { process.exitCode=2; }
+
+///|
+extern "js" fn clear_output(path : String) -> Unit =
+  #|(p) => { try { require('node:fs').writeFileSync(p,'','utf8'); } catch(e) { process.stderr.write('MoonSTDF: cannot write output: '+e.message+'\n'); process.exit(2); } }
+
+///|
+extern "js" fn same_file(a : String, b : String) -> Bool =
+  #|(a,b) => { const fs=require('node:fs'), p=require('node:path'); if(p.resolve(a)===p.resolve(b))return true; try { const x=fs.statSync(a), y=fs.statSync(b); return x.dev===y.dev && x.ino===y.ino; } catch { return false; } }
+
+///|
+fn inspect_file(
+  path : String,
+  output : String,
+  dump~ : Bool,
+) -> Unit raise @moonstdf.StdfError {
+  let fd = open_file(path)
+  defer close_file(fd)
+  let framer = @moonstdf.Framer::new()
+  let validator = @moonstdf.V4Validator::new()
+  if dump && output != "-" {
+    clear_output(output)
+  }
+  while true {
+    let chunk = read_chunk(fd)
+    if chunk.length() == 0 {
+      break
+    }
+    for frame in framer.feed(chunk) {
+      if dump {
+        append_output(output, @moonstdf.v4_record_json(frame))
+      } else {
+        validator.accept(frame)
+      }
+    }
+  }
+  framer.finish()
+  if !dump {
+    let report = validator.finish()
+    write_output(output, @moonstdf.validation_json(report))
+    if !report.valid {
+      invalid_validation()
+    }
+  }
+}
+
+///|
 fn usage() -> String {
-  "MoonSTDF — offline STDF V4 analysis\nUsage:\n  analyze FILE [--format json|csv|html] [--output PATH|-]\n      [--policy observations|first|last] [--identity coordinates|part-id]\n  compare BEFORE AFTER [--output PATH|-]\n  retest INITIAL RETEST [--identity coordinates|part-id] [--output PATH|-]\nCore limits: 256 MiB input and 1,000,000 records per file.\n"
+  "MoonSTDF — offline STDF V4 decoding and analysis\nUsage:\n  dump FILE [--output PATH|-]       Full named fields as JSONL\n  validate FILE [--output PATH|-]   Structural and reference diagnostics\n  analyze FILE [--format json|csv|html] [--output PATH|-]\n      [--policy observations|first|last] [--identity coordinates|part-id]\n  compare BEFORE AFTER [--output PATH|-]\n  retest INITIAL RETEST [--identity coordinates|part-id] [--output PATH|-]\nCore limits: 256 MiB input and 1,000,000 records per file.\n"
 }
 
 ///|
@@ -63,7 +115,11 @@ fn run(argv : FixedArray[String]) -> Unit raise @moonstdf.StdfError {
     return
   }
   let command = argv[0]
-  if command != "analyze" && command != "compare" && command != "retest" {
+  if command != "analyze" &&
+    command != "compare" &&
+    command != "retest" &&
+    command != "dump" &&
+    command != "validate" {
     fail("unknown command; use --help")
     return
   }
@@ -113,7 +169,10 @@ fn run(argv : FixedArray[String]) -> Unit raise @moonstdf.StdfError {
     fail("invalid policy")
     return
   }
-  let required = if command == "analyze" { 1 } else { 2 }
+  let single = command == "analyze" ||
+    command == "dump" ||
+    command == "validate"
+  let required = if single { 1 } else { 2 }
   if positional.length() != required {
     fail("wrong number of input files; use --help")
     return
@@ -122,6 +181,14 @@ fn run(argv : FixedArray[String]) -> Unit raise @moonstdf.StdfError {
     fail(
       "compare/retest produce JSON and require explicit input selection before pairing",
     )
+    return
+  }
+  if output != "-" && positional.any(fn(input) { same_file(input, output) }) {
+    fail("output must differ from all input files")
+    return
+  }
+  if command == "dump" || command == "validate" {
+    inspect_file(positional[0], output, dump=command == "dump")
     return
   }
   let a = read_analysis(positional[0])

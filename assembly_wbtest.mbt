@@ -135,3 +135,48 @@ test "concurrent wafer groups with no SDR never silently match" {
     },
   )
 }
+
+///|
+test "typed ancillary records are kept out of unknown records" {
+  let a = Analyzer::new()
+  assembly_lot(a)
+  a.accept(assembly_frame(50, 30, b"\x01x"))
+  let report = a.finish()
+  assert_eq(report.ancillary_records.length(), 1)
+  assert_true(report.ancillary_records[0] is Dtr("x"))
+  assert_eq(report.unknown.length(), 0)
+}
+
+///|
+test "file requires PCR before its final MRR" {
+  let a = Analyzer::new()
+  assembly_lot(a)
+  assert_true(
+    try {
+      a.accept(assembly_frame(1, 20, b"\x00\x00\x00\x00"))
+      false
+    } catch {
+      StdfError(_, message) => message == "MRR requires a preceding PCR"
+    },
+  )
+}
+
+///|
+test "PCR must follow MIR and valid PCR allows final MRR" {
+  let before_mir = Analyzer::new()
+  before_mir.accept(assembly_frame(0, 10, b"\x02\x04"))
+  assert_true(
+    try {
+      before_mir.accept(assembly_frame(1, 30, b"\xff\xff\x00\x00\x00\x00"))
+      false
+    } catch {
+      StdfError(_, message) => message == "PCR must follow MIR"
+    },
+  )
+  let valid = Analyzer::new()
+  assembly_lot(valid)
+  valid.accept(assembly_frame(1, 30, b"\xff\xff\x00\x00\x00\x00"))
+  valid.accept(assembly_frame(1, 20, b"\x00\x00\x00\x00"))
+  let report = valid.finish()
+  assert_true(!report.diagnostics.any(fn(d) { d.code == "missing-pcr" }))
+}

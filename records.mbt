@@ -72,7 +72,8 @@ pub fn decode_metadata(frame : Frame) -> Metadata? raise StdfError {
       let cpu = r.u1()
       let version = r.u1()
       if version != 4 ||
-        !((cpu == 1 && frame.order == Big) ||
+        !((cpu == 0 && frame.order == Vax) ||
+        (cpu == 1 && frame.order == Big) ||
         (cpu == 2 && frame.order == Little)) {
         raise StdfError(frame.offset, "unsupported or inconsistent FAR")
       }

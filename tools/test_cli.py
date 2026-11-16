@@ -41,7 +41,8 @@ def main():
             assert not report['diagnostics'],(name,report['diagnostics'])
         else:
             assert all(not t['values'] for part in report['parts'] for t in part['tests'])
-        assert len(report['unknown_records'])==(3 if 'ptr_100_mean' in want else 0)
+        assert len(report['unknown_records'])==0
+        assert len(report['ancillary_records'])==(3 if 'ptr_100_mean' in want else 0)
     with tempfile.TemporaryDirectory() as tmp:
         p = Path(tmp)
         bad = p/'bad.stdf'
@@ -51,6 +52,15 @@ def main():
         run('nonsense',ok=False)
         incomplete = p/'far-only.stdf'
         incomplete.write_bytes(bytes([2,0,0,10,2,4]))
+        original = incomplete.read_bytes()
+        for command in ('dump', 'validate', 'analyze'):
+            rejected = run(command, incomplete, '--output', incomplete, ok=False)
+            assert rejected.returncode == 2 and 'differ' in rejected.stderr
+            assert incomplete.read_bytes() == original, 'input was overwritten'
+        output = p/'records.jsonl'
+        run('dump', incomplete, '--output', output)
+        assert output.read_bytes().startswith(b'{'), 'dump has a blank first line'
+        assert len(output.read_text(encoding='utf8').splitlines()) == 1
         for command in ('compare','retest'):
             partial=json.loads(run(command,incomplete,incomplete).stdout)
             assert any(d['code']=='missing-mrr' and 'before' in d['message'] for d in partial['diagnostics'])

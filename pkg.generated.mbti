@@ -14,6 +14,8 @@ pub fn compare_retests(Array[Part], Array[Part], RetestIdentity) -> RetestReport
 
 pub fn comparison_json(BatchComparison) -> String
 
+pub fn decode_ancillary(Frame) -> AncillaryRecord? raise StdfError
+
 pub fn decode_frames(Bytes) -> Array[Frame] raise StdfError
 
 pub fn decode_functional(Frame) -> TestRecord? raise StdfError
@@ -25,6 +27,8 @@ pub fn decode_parametric(Frame) -> TestRecord? raise StdfError
 pub fn decode_part(Frame) -> PartRecord? raise StdfError
 
 pub fn decode_summary(Frame) -> Summary? raise StdfError
+
+pub fn decode_v4_record(Frame) -> V4Record? raise StdfError
 
 pub fn grouped_yield(Array[Part]) -> Array[YieldGroup]
 
@@ -44,6 +48,12 @@ pub fn test_signature(Measurement) -> TestSignature
 
 pub fn test_statistics(Array[Part]) -> Array[TestStatistics]
 
+pub fn v4_record_json(Frame) -> String raise StdfError
+
+pub fn validate_v4(Bytes) -> ValidationReport raise StdfError
+
+pub fn validation_json(ValidationReport) -> String
+
 pub fn yield_summary(Array[Part]) -> YieldSummary
 
 // Errors
@@ -59,6 +69,7 @@ pub(all) struct Analysis {
   parts : Array[Part]
   diagnostics : Array[Diagnostic]
   summaries : Array[Summary]
+  ancillary_records : Array[AncillaryRecord]
   unknown : Array[Frame]
   record_count : Int32
 }
@@ -68,6 +79,7 @@ pub struct Analyzer {
   mut lot : String
   mut have_mir : Bool
   mut have_mrr : Bool
+  mut have_pcr : Bool
   mut count : Int32
   mut received : Int32
   mut order : ByteOrder?
@@ -77,15 +89,31 @@ pub struct Analyzer {
   parts : Array[Part]
   diagnostics : Array[Diagnostic]
   summaries : Array[Summary]
+  ancillary_records : Array[AncillaryRecord]
   unknown : Array[Frame]
   groups : Map[String, Int32]
   wafers : Map[String, String]
   pending : Map[String, PendingPart]
   defaults : Map[String, TestDefaults]
+  validator : V4Validator
 }
 pub fn Analyzer::accept(Self, Frame) -> Unit raise StdfError
 pub fn Analyzer::finish(Self) -> Analysis raise StdfError
 pub fn Analyzer::new(max_records? : Int32, max_bytes? : Int32) -> Self
+
+#derive(@debug.Debug)
+pub(all) enum AncillaryRecord {
+  Atr(UInt32, String)
+  Pmr(UInt32, Int32, String, String, String, Int32, Int32)
+  Pgr(UInt32, String, Array[Int32])
+  Plr(Array[Int32], Array[Int32], Array[Int32], Array[Array[String]])
+  Rdr(Array[Int32])
+  Bps(String)
+  Eps
+  Gdr(Array[GenericValue])
+  Dtr(String)
+}
+pub fn AncillaryRecord::to_repr(Self) -> @debug.Repr
 
 #derive(@debug.Debug)
 pub(all) struct BatchComparison {
@@ -108,6 +136,7 @@ pub fn BinTransition::to_repr(Self) -> @debug.Repr
 pub(all) enum ByteOrder {
   Little
   Big
+  Vax
 }
 pub fn ByteOrder::equal(Self, Self) -> Bool
 pub fn ByteOrder::not_equal(Self, Self) -> Bool
@@ -147,6 +176,24 @@ pub struct Framer {
 pub fn Framer::feed(Self, Bytes) -> Array[Frame] raise StdfError
 pub fn Framer::finish(Self) -> Unit raise StdfError
 pub fn Framer::new(max_bytes? : Int32, max_records? : Int32) -> Self
+
+#derive(@debug.Debug)
+pub(all) enum GenericValue {
+  Padding
+  U1(Int32)
+  U2(Int32)
+  U4(UInt32)
+  I1(Int32)
+  I2(Int32)
+  I4(Int32)
+  R4(Double)
+  R8(Double)
+  Text(String)
+  Binary(Bytes)
+  Bits(Int32, Bytes)
+  Nibble(Int32)
+}
+pub fn GenericValue::to_repr(Self) -> @debug.Repr
 
 #derive(@debug.Debug)
 pub(all) struct LotInfo {
@@ -259,6 +306,7 @@ pub fn Reader::i2(Self) -> Int32 raise StdfError
 pub fn Reader::new(Bytes, ByteOrder, Int32) -> Self
 pub fn[T] Reader::optional(Self, (Self) -> T raise StdfError) -> T? raise StdfError
 pub fn Reader::r4(Self) -> Double raise StdfError
+pub fn Reader::r8(Self) -> Double raise StdfError
 pub fn Reader::remaining(Self) -> Int32
 pub fn Reader::take(Self, Int32) -> Bytes raise StdfError
 pub fn Reader::u1(Self) -> Int32 raise StdfError
@@ -394,6 +442,66 @@ pub(all) struct TestStatistics {
   failure_rate : Double?
 }
 pub fn TestStatistics::to_repr(Self) -> @debug.Repr
+
+#derive(@debug.Debug)
+pub(all) struct V4Field {
+  name : String
+  value : V4Value
+}
+pub fn V4Field::to_repr(Self) -> @debug.Repr
+
+#derive(@debug.Debug)
+pub(all) struct V4Record {
+  name : String
+  fields : Array[V4Field]
+  frame : Frame
+}
+pub fn V4Record::field(Self, String) -> V4Value?
+pub fn V4Record::to_repr(Self) -> @debug.Repr
+
+pub struct V4Validator {
+  mut closed : Bool
+  mut count : Int32
+  mut received : Int32
+  mut phase : Int32
+  mut previous : String
+  mut order : ByteOrder?
+  max_records : Int32
+  max_bytes : Int32
+  counts : Map[String, Int32]
+  diagnostics : Array[Diagnostic]
+  pins : Map[Int32, Bool]
+  pin_groups : Map[Int32, Bool]
+  sections : Array[Int32]
+  parts : Map[String, Int32]
+  wafers : Map[String, String]
+}
+pub fn V4Validator::accept(Self, Frame) -> Unit raise StdfError
+pub fn V4Validator::finish(Self) -> ValidationReport raise StdfError
+pub fn V4Validator::new(max_records? : Int32, max_bytes? : Int32) -> Self
+
+#derive(@debug.Debug)
+pub(all) enum V4Value {
+  MissingField
+  UnsignedField(UInt32)
+  SignedField(Int32)
+  RealField(Double)
+  TextField(String)
+  BytesField(Bytes)
+  BitsField(Int32, Bytes)
+  ArrayField(Array[V4Value])
+  GenericField(Array[GenericValue])
+}
+pub fn V4Value::to_repr(Self) -> @debug.Repr
+
+#derive(@debug.Debug)
+pub(all) struct ValidationReport {
+  valid : Bool
+  record_count : Int32
+  record_counts : Map[String, Int32]
+  diagnostics : Array[Diagnostic]
+}
+pub fn ValidationReport::to_repr(Self) -> @debug.Repr
 
 #derive(@debug.Debug)
 pub(all) struct WaferGeometry {
