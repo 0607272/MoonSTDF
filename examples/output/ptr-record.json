@@ -1,0 +1,235 @@
+{
+  "schema": "moonstdf/record/1",
+  "name": "PTR",
+  "offset": 640,
+  "type": 15,
+  "subtype": 10,
+  "body_length": 57,
+  "representation": "ieee-le",
+  "fields": [
+    {
+      "name": "TEST_NUM",
+      "decoded": {
+        "present": true,
+        "wire_kind": "unsigned",
+        "value": 100
+      }
+    },
+    {
+      "name": "HEAD_NUM",
+      "decoded": {
+        "present": true,
+        "wire_kind": "unsigned",
+        "value": 1
+      }
+    },
+    {
+      "name": "SITE_NUM",
+      "decoded": {
+        "present": true,
+        "wire_kind": "unsigned",
+        "value": 1
+      }
+    },
+    {
+      "name": "TEST_FLG",
+      "decoded": {
+        "present": true,
+        "wire_kind": "unsigned",
+        "value": 0
+      }
+    },
+    {
+      "name": "PARM_FLG",
+      "decoded": {
+        "present": true,
+        "wire_kind": "unsigned",
+        "value": 192
+      }
+    },
+    {
+      "name": "RESULT",
+      "decoded": {
+        "present": true,
+        "wire_kind": "real",
+        "value": 1.5,
+        "finite": true
+      }
+    },
+    {
+      "name": "TEST_TXT",
+      "decoded": {
+        "present": true,
+        "wire_kind": "text",
+        "value": "voltage"
+      }
+    },
+    {
+      "name": "ALARM_ID",
+      "decoded": {
+        "present": true,
+        "wire_kind": "text",
+        "value": "alarm"
+      }
+    },
+    {
+      "name": "OPT_FLAG",
+      "decoded": {
+        "present": true,
+        "wire_kind": "unsigned",
+        "value": 2
+      }
+    },
+    {
+      "name": "RES_SCAL",
+      "decoded": {
+        "present": true,
+        "wire_kind": "signed",
+        "value": 6
+      }
+    },
+    {
+      "name": "LLM_SCAL",
+      "decoded": {
+        "present": true,
+        "wire_kind": "signed",
+        "value": -3
+      }
+    },
+    {
+      "name": "HLM_SCAL",
+      "decoded": {
+        "present": true,
+        "wire_kind": "signed",
+        "value": 3
+      }
+    },
+    {
+      "name": "LO_LIMIT",
+      "decoded": {
+        "present": true,
+        "wire_kind": "real",
+        "value": 1,
+        "finite": true
+      }
+    },
+    {
+      "name": "HI_LIMIT",
+      "decoded": {
+        "present": true,
+        "wire_kind": "real",
+        "value": 3,
+        "finite": true
+      }
+    },
+    {
+      "name": "UNITS",
+      "decoded": {
+        "present": true,
+        "wire_kind": "text",
+        "value": "V"
+      }
+    },
+    {
+      "name": "C_RESFMT",
+      "decoded": {
+        "present": true,
+        "wire_kind": "text",
+        "value": "%f"
+      }
+    },
+    {
+      "name": "C_LLMFMT",
+      "decoded": {
+        "present": true,
+        "wire_kind": "text",
+        "value": "%f"
+      }
+    },
+    {
+      "name": "C_HLMFMT",
+      "decoded": {
+        "present": true,
+        "wire_kind": "text",
+        "value": "%f"
+      }
+    },
+    {
+      "name": "LO_SPEC",
+      "decoded": {
+        "present": true,
+        "wire_kind": "real",
+        "value": 0.5,
+        "finite": true
+      }
+    },
+    {
+      "name": "HI_SPEC",
+      "decoded": {
+        "present": true,
+        "wire_kind": "real",
+        "value": 3.5,
+        "finite": true
+      }
+    }
+  ],
+  "raw_body": [
+    100,
+    0,
+    0,
+    0,
+    1,
+    1,
+    0,
+    192,
+    0,
+    0,
+    192,
+    63,
+    7,
+    118,
+    111,
+    108,
+    116,
+    97,
+    103,
+    101,
+    5,
+    97,
+    108,
+    97,
+    114,
+    109,
+    2,
+    6,
+    253,
+    3,
+    0,
+    0,
+    128,
+    63,
+    0,
+    0,
+    64,
+    64,
+    1,
+    86,
+    2,
+    37,
+    102,
+    2,
+    37,
+    102,
+    2,
+    37,
+    102,
+    0,
+    0,
+    0,
+    63,
+    0,
+    0,
+    96,
+    64
+  ]
+}

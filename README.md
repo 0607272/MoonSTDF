@@ -1,10 +1,45 @@
-# MoonSTDF
+# 基于MoonBit的通用STDF V4解析库 MoonSTDF
 
 [![CI](https://github.com/0607272/MoonSTDF/actions/workflows/ci.yml/badge.svg)](https://github.com/0607272/MoonSTDF/actions/workflows/ci.yml)
 
 MoonBit 实现的通用 STDF V4 二进制解码库与离线数据工具链。**完整支持基础 STDF V4 的 25 种在用记录及全部标准字段解析**，把文件转换为可复用的命名字段、原始记录和诊断，供数据转换、归档、文件审计及测试分析使用。Node CLI 与浏览器工作台共用 MoonBit 核心。
 
 支持 CPU_TYPE 0/1/2（VAX F/D、IEEE 大端/小端）、可选尾部与 GDR 全部数据类型；提供文件顺序、跨记录引用和生命周期检查。完整解析的接口、逐记录矩阵及可复现证据见 [支持范围](docs/compatibility.md)。通用性体现在对不同 ATE 来源和上层应用复用同一套格式 API；实际厂商兼容性需用各自文件验证。V4-2007 为独立扩展，不属于本版本的基础 V4 解析承诺。
+
+## 项目范围说明
+
+**已实现完整支持 STDF V4 基础标准的全部 25 种在用记录类型及全部标准字段解析。** 本项目面向半导体测试数据通用分析场景，可适配多类型测试机台，不局限单一垂直产线；适配依据是标准格式，不包含未经验证的厂商私有扩展。解析终点为：**文件读取 → 记录解析 → 结构化校验 → 导出 JSON/JSONL**，输出可用于测试数据分析、可视化、数据库入库及长期归档。
+
+| 分类 | 已支持记录（REC_TYP/REC_SUB） | 状态 |
+|---|---|---|
+| 文件与审计 | FAR 0/10、ATR 0/20 | 已支持 |
+| 批次与汇总 | MIR 1/10、MRR 1/20、PCR 1/30、HBR 1/40、SBR 1/50 | 已支持 |
+| 引脚、复测与站点 | PMR 1/60、PGR 1/62、PLR 1/63、RDR 1/70、SDR 1/80 | 已支持 |
+| 晶圆 | WIR 2/10、WRR 2/20、WCR 2/30 | 已支持 |
+| 芯片 | PIR 5/10、PRR 5/20 | 已支持 |
+| 测试汇总 | TSR 10/30 | 已支持 |
+| 测试结果 | PTR 15/10、MPR 15/15、FTR 15/20 | 已支持 |
+| 程序段 | BPS 20/10、EPS 20/20 | 已支持 |
+| 通用数据与文本 | GDR 50/10、DTR 50/30 | 已支持 |
+
+逐记录状态、字段数和验证入口见根目录 [SUPPORT.md](SUPPORT.md)。完整字段解析不等于穷尽全部业务规则的符合性认证；V4-2007 扩展、压缩封装和 STDF 写回不在本期范围。
+
+开源价值：为 MoonBit 应用提供可复用的半导体 STDF 格式组件，减少各工具重复实现二进制解析。2026-11-18 在 Mooncakes 以 `stdf` 检索未发现同类包；该检索范围不代表全网唯一。
+
+## 评审快速验证与输出截图
+
+已上传原创合成 [样例 STDF V4 文件](fixtures/v4-all-records-le.stdf)：1,149 字节、27 条记录，覆盖全部 25 种类型和全部字段；无需真实产线数据。可下载 [完整记录 JSONL](examples/output/records.jsonl)、[结构化校验 JSON](examples/output/validation.json) 和 [完整 PTR 记录 JSON](examples/output/ptr-record.json)。
+
+```sh
+moon build --target js --deny-warn
+python tools/generate_demo.py
+```
+
+该脚本先调用真实 CLI 校验样例，通过后导出所有记录，并重建以上 JSON 和 [本地输出预览](examples/output/preview.html)。预期结果：`valid: true`、`record_count: 27`、25 种类型、无诊断。截图来自该预览对真实 CLI JSON 的展示，上方为完整校验结果，下方为 PTR 全部字段：
+
+![样例 STDF V4 的真实校验与结构化 JSON 输出](docs/images/stdf-v4-json-output.jpg)
+
+只验证 MoonBit 库、不需要 Python 或 Node 时：`moon run examples/demo --target wasm-gc`。源码见 [最小 Demo](examples/demo/main.mbt)，内嵌完整最小文件，演示分帧、命名字段访问、校验和 JSON 输出。
 
 ## 快速开始
 
@@ -100,6 +135,7 @@ python tools/generate_fixtures.py --check
 python tools/generate_v4_coverage.py --check
 python tools/test_cli.py
 python tools/test_v4_coverage.py
+python tools/generate_demo.py --check
 python tools/build_web.py
 python tools/test_web.py
 ```

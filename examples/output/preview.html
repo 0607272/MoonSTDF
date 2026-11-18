@@ -1,0 +1,85 @@
+<!doctype html><html lang="en"><meta charset="utf-8">
+<title>MoonSTDF — actual STDF V4 JSON output</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#eef2f6;color:#142a40;font:15px system-ui,sans-serif}
+main{max-width:1500px;margin:auto;padding:28px}h1{margin:0 0 8px;font-size:28px}
+p{margin:8px 0 18px;color:#465b70}.badge{background:#d8f3e6;color:#12573b;padding:5px 10px;border-radius:6px}
+.grid{display:grid;grid-template-columns:370px minmax(0,1fr);gap:18px}section{background:white;border:1px solid #d0dbe6;border-radius:10px;overflow:hidden}
+h2{font-size:16px;padding:14px 18px;margin:0;border-bottom:1px solid #dce4eb}
+pre{padding:15px 18px;margin:0;font:12px/1.5 Consolas,monospace;white-space:pre-wrap;overflow-wrap:anywhere;color:#183d59}
+a{color:#12649b}footer{margin-top:16px;color:#465b70;font-size:13px}
+@media(max-width:850px){.grid{grid-template-columns:1fr}}
+</style><main><h1>MoonSTDF / STDF V4 → JSON</h1>
+<p><span class="badge">VALID · 27 records · 25 record types</span> CPU_TYPE 2 · IEEE little endian · original synthetic data</p>
+<p>Input: <a href="../../fixtures/v4-all-records-le.stdf">v4-all-records-le.stdf</a> ·
+<a href="records.jsonl">All records (JSONL)</a> · <a href="ptr-record.json">PTR JSON</a></p>
+<div class="grid"><section><h2>validate · complete JSON result</h2><pre>{
+  &quot;schema&quot;: &quot;moonstdf/validation/1&quot;,
+  &quot;valid&quot;: true,
+  &quot;scope&quot;: &quot;base STDF V4; CPU_TYPE 0/1/2; structural, sequence and reference checks&quot;,
+  &quot;record_count&quot;: 27,
+  &quot;record_counts&quot;: {
+    &quot;FAR&quot;: 1,
+    &quot;ATR&quot;: 1,
+    &quot;MIR&quot;: 1,
+    &quot;RDR&quot;: 1,
+    &quot;SDR&quot;: 1,
+    &quot;PMR&quot;: 3,
+    &quot;PGR&quot;: 1,
+    &quot;PLR&quot;: 1,
+    &quot;WIR&quot;: 1,
+    &quot;WCR&quot;: 1,
+    &quot;DTR&quot;: 1,
+    &quot;GDR&quot;: 1,
+    &quot;PIR&quot;: 1,
+    &quot;BPS&quot;: 1,
+    &quot;PTR&quot;: 1,
+    &quot;MPR&quot;: 1,
+    &quot;FTR&quot;: 1,
+    &quot;EPS&quot;: 1,
+    &quot;PRR&quot;: 1,
+    &quot;TSR&quot;: 1,
+    &quot;HBR&quot;: 1,
+    &quot;SBR&quot;: 1,
+    &quot;PCR&quot;: 1,
+    &quot;WRR&quot;: 1,
+    &quot;MRR&quot;: 1
+  },
+  &quot;diagnostics&quot;: []
+}
+</pre></section>
+<section><h2>dump · complete PTR record / all 20 fields</h2><pre>{
+  &quot;schema&quot;: &quot;moonstdf/record/1&quot;,
+  &quot;name&quot;: &quot;PTR&quot;,
+  &quot;offset&quot;: 640,
+  &quot;type&quot;: 15,
+  &quot;subtype&quot;: 10,
+  &quot;body_length&quot;: 57,
+  &quot;representation&quot;: &quot;ieee-le&quot;,
+  &quot;fields&quot;: [
+    {&quot;name&quot;:&quot;TEST_NUM&quot;,&quot;decoded&quot;:{&quot;present&quot;:true,&quot;wire_kind&quot;:&quot;unsigned&quot;,&quot;value&quot;:100}},
+    {&quot;name&quot;:&quot;HEAD_NUM&quot;,&quot;decoded&quot;:{&quot;present&quot;:true,&quot;wire_kind&quot;:&quot;unsigned&quot;,&quot;value&quot;:1}},
+    {&quot;name&quot;:&quot;SITE_NUM&quot;,&quot;decoded&quot;:{&quot;present&quot;:true,&quot;wire_kind&quot;:&quot;unsigned&quot;,&quot;value&quot;:1}},
+    {&quot;name&quot;:&quot;TEST_FLG&quot;,&quot;decoded&quot;:{&quot;present&quot;:true,&quot;wire_kind&quot;:&quot;unsigned&quot;,&quot;value&quot;:0}},
+    {&quot;name&quot;:&quot;PARM_FLG&quot;,&quot;decoded&quot;:{&quot;present&quot;:true,&quot;wire_kind&quot;:&quot;unsigned&quot;,&quot;value&quot;:192}},
+    {&quot;name&quot;:&quot;RESULT&quot;,&quot;decoded&quot;:{&quot;present&quot;:true,&quot;wire_kind&quot;:&quot;real&quot;,&quot;value&quot;:1.5,&quot;finite&quot;:true}},
+    {&quot;name&quot;:&quot;TEST_TXT&quot;,&quot;decoded&quot;:{&quot;present&quot;:true,&quot;wire_kind&quot;:&quot;text&quot;,&quot;value&quot;:&quot;voltage&quot;}},
+    {&quot;name&quot;:&quot;ALARM_ID&quot;,&quot;decoded&quot;:{&quot;present&quot;:true,&quot;wire_kind&quot;:&quot;text&quot;,&quot;value&quot;:&quot;alarm&quot;}},
+    {&quot;name&quot;:&quot;OPT_FLAG&quot;,&quot;decoded&quot;:{&quot;present&quot;:true,&quot;wire_kind&quot;:&quot;unsigned&quot;,&quot;value&quot;:2}},
+    {&quot;name&quot;:&quot;RES_SCAL&quot;,&quot;decoded&quot;:{&quot;present&quot;:true,&quot;wire_kind&quot;:&quot;signed&quot;,&quot;value&quot;:6}},
+    {&quot;name&quot;:&quot;LLM_SCAL&quot;,&quot;decoded&quot;:{&quot;present&quot;:true,&quot;wire_kind&quot;:&quot;signed&quot;,&quot;value&quot;:-3}},
+    {&quot;name&quot;:&quot;HLM_SCAL&quot;,&quot;decoded&quot;:{&quot;present&quot;:true,&quot;wire_kind&quot;:&quot;signed&quot;,&quot;value&quot;:3}},
+    {&quot;name&quot;:&quot;LO_LIMIT&quot;,&quot;decoded&quot;:{&quot;present&quot;:true,&quot;wire_kind&quot;:&quot;real&quot;,&quot;value&quot;:1,&quot;finite&quot;:true}},
+    {&quot;name&quot;:&quot;HI_LIMIT&quot;,&quot;decoded&quot;:{&quot;present&quot;:true,&quot;wire_kind&quot;:&quot;real&quot;,&quot;value&quot;:3,&quot;finite&quot;:true}},
+    {&quot;name&quot;:&quot;UNITS&quot;,&quot;decoded&quot;:{&quot;present&quot;:true,&quot;wire_kind&quot;:&quot;text&quot;,&quot;value&quot;:&quot;V&quot;}},
+    {&quot;name&quot;:&quot;C_RESFMT&quot;,&quot;decoded&quot;:{&quot;present&quot;:true,&quot;wire_kind&quot;:&quot;text&quot;,&quot;value&quot;:&quot;%f&quot;}},
+    {&quot;name&quot;:&quot;C_LLMFMT&quot;,&quot;decoded&quot;:{&quot;present&quot;:true,&quot;wire_kind&quot;:&quot;text&quot;,&quot;value&quot;:&quot;%f&quot;}},
+    {&quot;name&quot;:&quot;C_HLMFMT&quot;,&quot;decoded&quot;:{&quot;present&quot;:true,&quot;wire_kind&quot;:&quot;text&quot;,&quot;value&quot;:&quot;%f&quot;}},
+    {&quot;name&quot;:&quot;LO_SPEC&quot;,&quot;decoded&quot;:{&quot;present&quot;:true,&quot;wire_kind&quot;:&quot;real&quot;,&quot;value&quot;:0.5,&quot;finite&quot;:true}},
+    {&quot;name&quot;:&quot;HI_SPEC&quot;,&quot;decoded&quot;:{&quot;present&quot;:true,&quot;wire_kind&quot;:&quot;real&quot;,&quot;value&quot;:3.5,&quot;finite&quot;:true}}
+  ],
+  &quot;raw_body&quot;: [100, 0, 0, 0, 1, 1, 0, 192, 0, 0, 192, 63, 7, 118, 111, 108, 116, 97, 103, 101, 5, 97, 108, 97, 114, 109, 2, 6, 253, 3, 0, 0, 128, 63, 0, 0, 64, 64, 1, 86, 2, 37, 102, 2, 37, 102, 2, 37, 102, 0, 0, 0, 63, 0, 0, 96, 64]
+}
+</pre></section></div>
+<footer>Actual CLI output, reformatted for reading. Reproduce: moon build --target js &amp;&amp; python tools/generate_demo.py<br>
+Base V4 field decoding and documented checks; not a vendor interoperability or full conformance certificate.</footer></main></html>
