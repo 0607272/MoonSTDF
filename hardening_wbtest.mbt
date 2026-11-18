@@ -78,7 +78,7 @@ test "public projections reject invalid FAR and oversized record bodies" {
           typ: 15,
           sub: 20,
           order: Little,
-          body: Bytes::new(65536),
+          body: Bytes::make(65536, b'\x00'),
         }),
       )
       false
