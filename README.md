@@ -97,7 +97,21 @@ python tools/build_web.py
 
 ## MoonBit API
 
-在 MoonBit 工程的 `moon.pkg` 中导入 `"0607272/moonstdf"`，并使用本地路径依赖或源码检出；当前尚未发布 Mooncakes 包。
+已发布 [Mooncakes 包 `0607272/moonstdf@0.1.0`](https://mooncakes.io/docs/0607272/moonstdf)。在自己的 MoonBit 工程根目录安装：
+
+```sh
+moon add 0607272/moonstdf@0.1.0
+```
+
+在使用该库的目录的 `moon.pkg` 中导入：
+
+```moonbit
+import {
+  "0607272/moonstdf" @moonstdf,
+}
+```
+
+发布版本已在独立工程从注册表安装，并验证 JS/Wasm/WasmGC 的示例运行；也可使用本地路径依赖或源码检出。
 
 ```moonbit
 fn inspect_file(data : Bytes) -> String raise @moonstdf.StdfError {

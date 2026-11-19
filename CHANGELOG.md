@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.1.0 — 2026-11-19
+
+- Publish `0607272/moonstdf@0.1.0` to Mooncakes from source commit
+  `9d0297ccc88de3b5e4a6ff3c619c645e0c2c800b`; registry build status is `success`.
+- Verify installation in an independent module and run the public demo on
+  JS, Wasm and WasmGC with 6 records, 1 passing part and no diagnostics.
+- Document registry installation and package imports in the README.
+
 ## Unreleased — 2026-11-18
 
 - Put the general-purpose MoonBit STDF V4 scope, record inventory and explicit
